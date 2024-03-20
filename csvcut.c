@@ -348,6 +348,7 @@ static void get_type(char *type)
       break;
     }
   }
+  if(NULL==otc[i].name) errx(1, "Invalid type");
 }
 
 /* based on cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
