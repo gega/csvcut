@@ -33,16 +33,41 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <err.h>
+#include <ctype.h>
 
 #include "ccsv.h" /* https://github.com/gega/ccsv */
 
 #define BUFCHUNK (512)
 
 
+enum outtype
+{
+  OT_CSV,
+  OT_JSON,
+  OT_XML,
+  OTNUM
+};
+
+struct otypes
+{
+  char *name;
+  enum outtype type;
+  int is_header;
+};
+
+static struct otypes otc[]=
+{
+  { "csv",  OT_CSV, 	1 },
+  { "json", OT_JSON, 	0 },
+  { "xml",  OT_XML, 	0 },
+  {NULL}
+};
+
 static char *positions=NULL;
 static size_t autostart, autostop, maxval;
 static int Hflag=0; /* skip first row */
-static int Jflag=0; /* json output */
+static enum outtype otype=OT_CSV;
+
 
 /* from cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
  */
@@ -184,6 +209,31 @@ static char *escape(char *str)
   return(buf+1);
 }
 
+static void xmltagsanitize(char *field)
+{
+  if(!isalpha(*field)) *field='_';
+  for(;*field;field++)
+  {
+    if(!isalnum(*field)) *field='_';
+  }
+}
+
+static void print_field_csv(char * const field, int col, int prcol, char * const fname)
+{
+  printf("%s\"%s\"",(prcol==0?"":","),field);
+}
+
+static void print_field_json(char * const field, int col, int prcol, char * const fname)
+{
+  printf("%s\"%s\": \"%s\"",(prcol==0?"{ ":", "),fname,escape(field));
+}
+
+static void print_field_xml(char * const field, int col, int prcol, char * const fname)
+{
+  if(prcol==0) printf("<row>");
+  printf("<%s>%s</%s>",fname,field,fname);
+}
+
 static int csv_cut(FILE *fp, const char *fnam, char dchar)
 {
   struct ccsv c;
@@ -195,12 +245,23 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   int (*countq)(char const *,int *,char,int *);
   int fldnum=1;
   char **fields=NULL;
+  void (*prfld)(char * const, int, int, char * const);
 
   bufsiz=BUFCHUNK;
   buf=malloc(bufsiz);
   end=buf;
   countq=countquotes_fld;
-  if(Jflag) printf("[\n");
+  prfld=print_field_csv;
+  if(OT_JSON==otype)
+  {
+    prfld=print_field_json;
+    printf("[\n");
+  }
+  else if(OT_XML==otype)
+  {
+    prfld=print_field_xml;
+    printf("<xml>\n");
+  }
   while(NULL!=end)
   {
     for(buf[0]='\0',req=1,lnx=0,lnxsiz=bufsiz,noq=0; NULL!=end&&noq!=req; )
@@ -229,25 +290,33 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
 
     if('\0'!=buf[0])
     {
-      if(lineno>2&&Jflag) printf(",\n");
+      if(lineno>2)
+      {
+        if(OT_JSON==otype) printf(",\n");
+        else if(OT_XML==otype) printf("</row>\n");
+      }
       // get line
       ccsv_init_ex(&c,buf,dchar);
       for(i=col=0;NULL!=(f=ccsv_nextfield(&c,&typ));i++)
       {
-        if(lineno==1) fields[i]=strdup(f);
+        if(lineno==1)
+        {
+          fields[i]=strdup(f);
+          if(OT_XML==otype) xmltagsanitize(fields[i]);
+        }
         if(Hflag&&lineno==1) continue;
         if(positions==NULL||(autostop>1&&autostop<(i+1))||positions[i+1]!=0)
         {
-          if(Jflag) printf("%s\"%s\": \"%s\"",(col==0?"{ ":", "),fields[i],escape(f));
-          else printf("%s\"%s\"",(col==0?"":","),f);
+          prfld(f,i,col,fields[i]);
           col++;
         }
       }
-      if(Jflag&&lineno>1) printf("}");
-      if(!((Hflag&&lineno==1)||Jflag)) printf("\n");
+      if(OT_JSON==otype&&lineno>1) printf("}");
+      if(!((Hflag&&lineno==1)||OT_JSON==otype)) printf("\n");
     }
   }
-  if(Jflag) printf("\n]\n");
+  if(OT_JSON==otype) printf("\n]\n");
+  else if(OT_XML==otype) printf("</row></xml>\n");
   if(NULL!=fields)
   {
     for(i=0;i<fldnum;i++) if(NULL!=fields[i]) free(fields[i]);
@@ -262,8 +331,23 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
 
 static void usage(char *argv0)
 {
-  (void)fprintf(stderr, "usage: %s -f list [-H] [-J] [-d delim] [file ...]\n", argv0);
+  (void)fprintf(stderr, "usage: %s [-f list] [-H] [-o csv|json|xml] [-d delim] [file ...]\n", argv0);
   exit(1);
+}
+
+static void get_type(char *type)
+{
+  int i;
+  
+  for(i=0;otc[i].name!=NULL;i++)
+  {
+    if(strncmp(otc[i].name,type,strlen(otc[i].name))==0)
+    {
+      otype=otc[i].type;
+      if(!otc[i].is_header) Hflag=1;
+      break;
+    }
+  }
 }
 
 /* based on cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
@@ -274,7 +358,7 @@ int main(int argc, char *argv[])
   int ch, rval;
   char dchar=','; /* default delimiter is ',' */
 
-  while ((ch = getopt(argc, argv, "d:f:HhJ")) != -1)
+  while ((ch = getopt(argc, argv, "d:f:Hho:")) != -1)
   {
     switch(ch) 
     {
@@ -288,9 +372,8 @@ int main(int argc, char *argv[])
       case 'H':
         Hflag = 1;
         break;
-      case 'J':
-        Jflag = 1;
-        Hflag = 1;
+      case 'o':
+        get_type(optarg);
         break;
       case 'h':
         usage(argv[0]);

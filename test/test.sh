@@ -7,10 +7,11 @@
 
 tests=(
     "-H -f4-5,-2,8- organizations-100.csv |md5sum"
-    "-J -f4-5,-2,8- organizations-100.csv|jq -c .|md5sum"
+    "-o json -f4-5,-2,8- organizations-100.csv|jq -c .|md5sum"
     "customers-100.csv |md5sum"
-    "-J -f1,4 ncca_qa_codes.csv|jq -c .|md5sum"
-    "-J -f12-,1 -d ';' FinancialSample.csv|jq -c .|md5sum"
+    "-o json -f1,4 ncca_qa_codes.csv|jq -c .|md5sum"
+    "-o json -f12-,1 -d ';' FinancialSample.csv|jq -c .|md5sum"
+    "-o xml customers-100.csv|xmllint --format -|md5sum"
 )
 
 TMP=$(mktemp)
