@@ -18,7 +18,7 @@ TMP=$(mktemp)
 for (( i=0; i<${#tests[@]}; i++ ));
 do
   echo "../csvcut ${tests[$i]} >$TMP" | sh &>/dev/null
-  cmp T$i.out $TMP &>/dev/null
+  cmp T$i.tout $TMP &>/dev/null
   if [ $? -ne 0 ]; then
     echo "test #$i FAILED"
   fi
