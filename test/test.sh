@@ -23,3 +23,5 @@ do
     echo "test #$i FAILED"
   fi
 done
+
+rm -f $TMP
