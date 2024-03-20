@@ -1,0 +1,58 @@
+Unique Qualifier Code,Definition,,Considerations
+B,Clear to bottom; indicates where no Secchi measurements were possible because the disk did not disappear.,,This is not a QA problem; rather it gives the reason for a null value for mean Secchi depth.
+,,,
+Q,Did not meet quality control requirements,,Use this code for atypical QC issues; comment required
+Q01,field equipment questionable/failure,,
+Q02,Detection/contamination in blank,,Use when blank result exceeds Lab Reporting Limit for analyte
+Q03,Incubation time not met,,
+Q04,Improper shipping procedures ,,
+Q05,"recovery of spike in sample, blank or calibration standard is out of range",,consider comment explaining whether value was above or below range
+Q06,Duplicate RPD out of range,,
+Q07,Temperature out of range,,
+Q08,Holding Time Exceeded,,
+Q09,Actual coordinates unavailable,,Consider using with Q10
+Q10,Field Procedure QC not met,,"consider comment (i.e. ""benthic grab depth less 
+than 7 cm,"" etc.)"
+Q11,Lab result reported with flag by lab,,"""lab report available upon request"" comment required with this code only if result removed from NARS analysis."
+Q12,Number of replicates tested deviated from protocol,,"If fewer than required, consider removing from NARS analysis; consider comment with number of replicates tested of number required."
+Q13,Minimum Mean % Survival of control not achieved in this batch,,consider removing from NARS analysis; consider comment with minimum requirement percentage.  Include lab comments if applicable.
+Q14,Record not used in regression calculation of Kd,,use in hydroprofile with one of the following comments: Less than three PAR records; Unacceptable regression; UW values suspect; AMB values suspect
+Q15,Horizontal Secchi Measurement,,
+Q16,Data at this site are incomplete,,
+Q17,Coellutant,,"requires a comment indicating the number of the coellutant, if available.  If not available, comment states coellutant number unavailable."
+Q18,Benthic grab field information standardized,,"Use this comment to indicate whenever grab type, grab area or grab depth record was changed to standardize information across field teams.  Consider comment explaining change."
+Q19,Lab QC data not available or incomplete,,"Assign this code where labs did not report QC data such as duplicates, blank or matrix spikes, or the lab reported incomplete QC data or did not report MDLs while reporting results as non-detects."
+Q20,Unable to calculate RPD,,
+Q21,MDL or estimated MDL does not meet MDL requirement specified by the QAPP,,
+Q22,QC data not reviewed by NARS.  Either not a target analyte or not a target site.  QC data may have been reviewed by lab. Data use at discretion of user.,,Flag non-target data provided by labs with this code.
+Q23,Result value calculated by NARS IM team,,
+Q24,Sample identification error,,Use to identify unresolvable sample ID errors of any kind.  Consider removing from analysis depending on severity of error.  Comment explaining error is recommended.
+Q25,Data or sample collected from incorrect location,,"Use to identify data or samples that were collected outside of the allowable distance from the X-Site. Consider also flagging with ""R"" code."
+,,,
+J,Value estimated by lab and acceptable for NARS analysis; use of data at users's discretion,,
+J01,No MDL Reported;  MDL set to lowest result value reported by lab,,
+J02,Reported value is less than MDL but greater than zero.,,
+J03,reported value is between MDL and RL and therefore considered an estimate,,
+J04,Uncensored value reported as zero and flagged by lab as less than MDL,,
+,,,
+N,Non-detect; numeric zero entered in results field to simplify database manipulation,,
+,,,
+L,"Value reported as ""<MDL""; numeric zero entered in results field to simplify database manipulation",,
+,,,
+R,Data did not meet NCCA DQOs.  Data removed from NARS analysis; use of data at end-users' discretion,,consider comment if not explained by other QA code
+,,,
+_T,This value is still under review (to be determined),,apply to anything where there is a high likelihood that a value is subject to change
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,

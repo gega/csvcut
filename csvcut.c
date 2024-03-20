@@ -146,8 +146,8 @@ static int countquotes_fld(char const * str, int *len, char dchar, int *fields)
 
 static char *escape(char *str)
 {
-  static const char esc[]={'\n','\t','\r','\'','\"','\0'};
-  static const char rpl[]={ 'n', 't', 'r','\'', '"','\0'};
+  static const char esc[]={'\n','\t','\r','\"','\0'};
+  static const char rpl[]={ 'n', 't', 'r', '"','\0'};
   static char *buf=NULL;
   static int buflen=0;
   int len;
@@ -159,20 +159,29 @@ static char *escape(char *str)
     return(NULL);
   }
   len=strlen(str);
-  if(buflen<len*2) buf=realloc(buf,len*2);
-  for(b=buf;*str;str++)
+  if(buflen<len*2)
+  {
+    buflen=len*2;
+    if(NULL!=buf) free(buf);
+    buf=malloc(buflen+1);
+    buf[0]='\0';
+  }
+  for(b=buf+1;*str;str++)
   {
     e=strchr(esc,*str);
     if(e==NULL) *b++=*str;
     else
     {
-      *b++='\\';
-      *b++=rpl[e-esc];
+      if(*(b-1)!='"')
+      {
+        *b++='\\';
+        *b++=rpl[e-esc];
+      }
     }
   }
   *b='\0';
 
-  return(buf);
+  return(buf+1);
 }
 
 static int csv_cut(FILE *fp, const char *fnam, char dchar)
@@ -227,7 +236,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       {
         if(lineno==1) fields[i]=strdup(f);
         if(Hflag&&lineno==1) continue;
-        if(positions==NULL||(autostop>0&&autostop<i)||positions[i]!=0)
+        if(positions==NULL||(autostop>1&&autostop<(i+1))||positions[i+1]!=0)
         {
           if(Jflag) printf("%s\"%s\": \"%s\"",(col==0?"{ ":", "),fields[i],escape(f));
           else printf("%s\"%s\"",(col==0?"":","),f);
@@ -246,6 +255,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   }
   free(buf);
   escape(NULL);
+  if(NULL!=positions) free(positions);
 
   return(0);
 }
