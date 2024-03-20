@@ -42,6 +42,7 @@
 static char *positions=NULL;
 static size_t autostart, autostop, maxval;
 static int Hflag=0; /* skip first row */
+static int Jflag=0; /* json output */
 
 /* from cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
  */
@@ -125,11 +126,53 @@ static void get_list(char *list)
     memset(positions + 1, '1', autostart);
 }
 
-static int countchar(char const * str, char ch, int *len)
+static int countquotes(char const * str, int *len, char, int *)
 {
   int ret;
-  for(ret=0,*len=0;*str!='\0';(*len)++,str++) if(*str==ch) ret++;
+  for(ret=0,*len=0;*str!='\0';(*len)++,str++) if(*str=='"') ret++;
   return(ret);
+}
+
+static int countquotes_fld(char const * str, int *len, char dchar, int *fields)
+{
+  int ret;
+  for(ret=0,*len=0;*str!='\0';(*len)++,str++) 
+  {
+    if(*str==dchar&&(ret%2)==0) (*fields)++;
+    if(*str=='"') ret++;
+  }
+  return(ret);
+}
+
+static char *escape(char *str)
+{
+  static const char esc[]={'\n','\t','\r','\'','\"','\0'};
+  static const char rpl[]={ 'n', 't', 'r','\'', '"','\0'};
+  static char *buf=NULL;
+  static int buflen=0;
+  int len;
+  char *b,*e;
+  
+  if(NULL==str)
+  {
+    if(NULL!=buf) free(buf);
+    return(NULL);
+  }
+  len=strlen(str);
+  if(buflen<len*2) buf=realloc(buf,len*2);
+  for(b=buf;*str;str++)
+  {
+    e=strchr(esc,*str);
+    if(e==NULL) *b++=*str;
+    else
+    {
+      *b++='\\';
+      *b++=rpl[e-esc];
+    }
+  }
+  *b='\0';
+
+  return(buf);
 }
 
 static int csv_cut(FILE *fp, const char *fnam, char dchar)
@@ -140,10 +183,15 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   int bufsiz,lnxsiz;
   char *end;
   int noq,req=0,len,col,i,lnx,noqc,lineno=0;
+  int (*countq)(char const *,int *,char,int *);
+  int fldnum=1;
+  char **fields=NULL;
 
   bufsiz=BUFCHUNK;
   buf=malloc(bufsiz);
   end=buf;
+  countq=countquotes_fld;
+  if(Jflag) printf("[\n");
   while(NULL!=end)
   {
     for(buf[0]='\0',req=1,lnx=0,lnxsiz=bufsiz,noq=0; NULL!=end&&noq!=req; )
@@ -153,7 +201,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       {
         end=fgets(&buf[lnx],lnxsiz,fp);
         if(NULL==end) break;
-        noqc+=countchar(&buf[lnx],'"',&len);
+        noqc+=countq(&buf[lnx],&len,dchar,&fldnum);
         lnx+=len;
         lnxsiz-=len;
         lastchar=buf[lnx-1];
@@ -167,32 +215,44 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       noq=noqc%2;
     }
     lineno++;
-    
-    if(Hflag&&lineno==1) continue;
+    countq=countquotes;
+    if(lineno==1) fields=calloc(fldnum,sizeof(char *));
 
     if('\0'!=buf[0])
     {
+      if(lineno>2&&Jflag) printf(",\n");
       // get line
       ccsv_init_ex(&c,buf,dchar);
       for(i=col=0;NULL!=(f=ccsv_nextfield(&c,&typ));i++)
       {
+        if(lineno==1) fields[i]=strdup(f);
+        if(Hflag&&lineno==1) continue;
         if(positions==NULL||(autostop>0&&autostop<i)||positions[i]!=0)
         {
-          printf("%s\"%s\"",(col==0?"":","),f);
+          if(Jflag) printf("%s\"%s\": \"%s\"",(col==0?"{ ":", "),fields[i],escape(f));
+          else printf("%s\"%s\"",(col==0?"":","),f);
           col++;
         }
       }
-      printf("\n");
+      if(Jflag&&lineno>1) printf("}");
+      if(!((Hflag&&lineno==1)||Jflag)) printf("\n");
     }
   }
+  if(Jflag) printf("\n]\n");
+  if(NULL!=fields)
+  {
+    for(i=0;i<fldnum;i++) if(NULL!=fields[i]) free(fields[i]);
+    free(fields);
+  }
   free(buf);
+  escape(NULL);
 
   return(0);
 }
 
 static void usage(char *argv0)
 {
-  (void)fprintf(stderr, "usage: %s -f list [-H] [-d delim] [file ...]\n", argv0);
+  (void)fprintf(stderr, "usage: %s -f list [-H] [-J] [-d delim] [file ...]\n", argv0);
   exit(1);
 }
 
@@ -204,7 +264,7 @@ int main(int argc, char *argv[])
   int ch, rval;
   char dchar=','; /* default delimiter is ',' */
 
-  while ((ch = getopt(argc, argv, "d:f:Hh")) != -1)
+  while ((ch = getopt(argc, argv, "d:f:HhJ")) != -1)
   {
     switch(ch) 
     {
@@ -216,6 +276,10 @@ int main(int argc, char *argv[])
         get_list(optarg);
         break;
       case 'H':
+        Hflag = 1;
+        break;
+      case 'J':
+        Jflag = 1;
         Hflag = 1;
         break;
       case 'h':

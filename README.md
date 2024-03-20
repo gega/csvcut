@@ -5,7 +5,7 @@ Parsing is based on [ccsv](https://github.com/gega/ccsv)
 
 Argument parsing based on [BSD cut.c](https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c)
 
-usage: ./csvcut -f list [-H] [-d delim] [file ...]
+usage: csvcut -f list [-H] [-J] [-d delim] [file ...]
 
   -f list
   
@@ -19,3 +19,6 @@ usage: ./csvcut -f list [-H] [-d delim] [file ...]
   
    Use _delim_ as the field	delimiter character instead of the comma character.
   
+  -J
+
+   Generate JSON output. This flag implies the -H flag.
