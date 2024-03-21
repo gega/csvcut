@@ -67,6 +67,7 @@ static char *positions=NULL;
 static size_t autostart, autostop, maxval;
 static int Hflag=0; /* skip first row */
 static enum outtype otype=OT_CSV;
+static char Dchar[]=","; /* default output delimiter is ',' */
 
 
 /* from cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
@@ -220,7 +221,7 @@ static void xmltagsanitize(char *field)
 
 static void print_field_csv(char * const field, int col, int prcol, char * const fname)
 {
-  printf("%s\"%s\"",(prcol==0?"":","),field);
+  printf("%s\"%s\"",(prcol==0?"":Dchar),field);
 }
 
 static void print_field_json(char * const field, int col, int prcol, char * const fname)
@@ -331,7 +332,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
 
 static void usage(char *argv0)
 {
-  (void)fprintf(stderr, "usage: %s [-f list] [-H] [-o csv|json|xml] [-d delim] [file ...]\n", argv0);
+  (void)fprintf(stderr, "usage: %s [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [file ...]\n", argv0);
   exit(1);
 }
 
@@ -359,13 +360,17 @@ int main(int argc, char *argv[])
   int ch, rval;
   char dchar=','; /* default delimiter is ',' */
 
-  while ((ch = getopt(argc, argv, "d:f:Hho:")) != -1)
+  while ((ch = getopt(argc, argv, "d:f:Hho:D:")) != -1)
   {
     switch(ch) 
     {
       case 'd':
         dchar = optarg[0];
         if(dchar == '\0') errx(1, "bad delimiter");
+        break;
+      case 'D':
+        Dchar[0] = optarg[0];
+        if(Dchar[0] == '\0') errx(1, "bad delimiter");
         break;
       case 'f':
         get_list(optarg);
