@@ -1,0 +1,97 @@
+.\" Manpage for csvcut.
+.\" Contact gati.gergely@gmail.com to correct errors or typos.
+.TH man 1 "23 Mar 2024" "1.0" "csvcut man page"
+.SH NAME
+csvcut \- select/process columns from csv files
+.SH SYNOPSIS
+csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
+.SH DESCRIPTION
+csvcut is a cut implementation for csv files.
+Parsing the input as csv formatted text file according to RFC 4180 with the exception that line
+ending is based on the system default.
+.SH OPTIONS
+.TP
+.BI "\-f " fields
+Select fields. This could be one range or several ranges separated by comma.
+A range is one of the following:
+
+.RS
+.TP
+N
+N'th field counting from 1
+.TP
+N\-
+N'th field and all following fields
+.TP
+N\-M
+fields between N'th and M'th including both given fields
+.TP
+\fB\-M\fR
+all fields from the first to M'th
+.RE
+
+.TP
+.B \-H
+Skip the first row from the output. The first row usually the header for csv
+files. This option is implicitly set when choosing an output format other
+than csv.
+
+.TP
+.BI "\-d " delim
+Choose a delimiter for the input csv. Default is a comma ',' character.
+
+.TP
+.BI "\-D " delim
+Choose a delimiter for the output csv. Default is a comma ',' character.
+This option is ignored for any output format except csv.
+
+.TP
+.BI "\-o " format
+Specify the output format. Default is 'csv'. Choose from the following
+formats:
+.TP
+.RS
+.TP
+csv
+Default csv format
+.TP
+json
+JSON output. Requires csv input with header row. The \fB\-H\fR option is implicitly set
+.TP
+xml
+XML output. Requires csv input with header row. The \fB\-H\fR option is implicitly set.
+.RE
+
+.TP
+.BI "\-c " field:command
+For the specified field, calls the given command and the standard output
+from the command will be placed instead of the field actual value. Can be
+used multiple times for different fields. The
+passed arguments to the command:
+.TP
+.RS
+
+.TP
+1
+column number in the input file
+.TP
+2
+column number in the output file
+.TP
+3
+name of the field, according to the header row
+.TP
+4
+actual field value
+.RE
+
+.TP
+.B \-h
+Summary of command line arguments and exit
+
+.SH SEE ALSO
+cut(1), jq(1), xmllint(1)
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Gergely Gati (gati.gergely@gmail.com)
