@@ -248,7 +248,7 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
   char *ret=field;
   char *cmd=buf;
   int cmdsiz=sizeof(buf);
-  int ln;
+  int ln,l;
   FILE *p;
   
   if(NULL==field)
@@ -267,21 +267,26 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
   }
   if(cbsize>col&&NULL!=cb[col])
   {
-    cmdsiz=snprintf(cmd,cmdsiz,"%s %d %d \"%s\" \"%s\"",cb[col],col,prcol,fname,field);
+    cmdsiz=1+snprintf(cmd,cmdsiz,"%s %d %d \"%s\" \"%s\"",cb[col],col,prcol,fname,field);
     if(cmdsiz>sizeof(buf))
     {
       cmd=malloc(cmdsiz);
       snprintf(cmd,cmdsiz,"%s %d %d \"%s\" \"%s\"",cb[col],col,prcol,fname,field);
+      
     }
     if((p=popen(cmd,"r")))
     {
-      // TODO: if not large enough, allocate more
-      if(0<(ln=fread(local_field,1,local_field_size,p)))
+      for(ln=0,l=FLDBUFSIZ;l==FLDBUFSIZ;ln+=l)
+      {
+        l=fread(&local_field[ln],1,FLDBUFSIZ,p);
+        if(l==FLDBUFSIZ) local_field=realloc(local_field,ln+FLDBUFSIZ);
+      }
+      pclose(p);
+      if(ln>0)
       {
         local_field[ln]='\0';
         ret=local_field;
       }
-      pclose(p);
     }
     if(cmd!=buf&&cmd!=NULL) free(cmd);
   }
