@@ -5,24 +5,99 @@ Parsing is based on [ccsv](https://github.com/gega/ccsv)
 
 Argument parsing based on [BSD cut.c](https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c)
 
-usage: csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
+```
+csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
+```
 
-  -f list
-  
-   The list	specifies fields, separated in the input by the	field delimiter character (see  the	-d option). Output fields are separated by a single occurrence of the field delimiter character. Fields are interpreted according to RFC 4180 with the exception of the line ending character is based on the system default, for Unix based systems '\n'
-  
-  -H
-  
-   Skip the first row which usually contains the header information
-  
-  -d delim
-  
-   Use _delim_ as the field	delimiter character instead of the comma character.
-  
-  -o type
+<a name="description"></a>
 
-   Choose output type. Default is 'csv'. Available output formats are: csv, json and xml. Only csv can keep the header row, other types implicitely sets the -H flag.
+# Description
 
-  -c field:command
+csvcut is a cut implementation for csv files.
+Parsing the input as csv formatted text file according to RFC 4180 with the exception that line
+ending is based on the system default.
 
-   On the field # provided, execute an external command which can process the field and print out the changed field to stdout. See procfield.sh for details.
+<a name="options"></a>
+
+# Options
+
+
+* **-f **_fields_  
+  Select fields. This could be one range or several ranges separated by comma.
+  A range is one of the following:
+  
+    * N  
+      N'th field counting from 1
+    * N-  
+      N'th field and all following fields
+    * N-M  
+      fields between N'th and M'th including both given fields
+    * **-M**  
+      all fields from the first to M'th
+  
+* **-H**  
+  Skip the first row from the output. The first row usually the header for csv
+  files. This option is implicitly set when choosing an output format other
+  than csv.
+  
+* **-d **_delim_  
+  Choose a delimiter for the input csv. Default is a comma ',' character.
+  
+* **-D **_delim_  
+  Choose a delimiter for the output csv. Default is a comma ',' character.
+  This option is ignored for any output format except csv.
+  
+* **-o **_format_  
+  Specify the output format. Default is 'csv'. Choose from the following
+  formats:
+*     * csv  
+      Default csv format
+    * json  
+      JSON output. Requires csv input with header row. The **-H** option is implicitly set
+    * xml  
+      XML output. Requires csv input with header row. The **-H** option is implicitly set.
+  
+* **-c **_field:command_  
+  For the specified field, calls the given command and the standard output
+  from the command will be placed instead of the field actual value. Can be
+  used multiple times for different fields. The
+  passed arguments to the command:
+*   
+    * 1  
+      column number in the input file
+    * 2  
+      column number in the output file
+    * 3  
+      name of the field, according to the header row
+    * 4  
+      actual field value
+  
+* **-h**  
+  Summary of command line arguments and exit
+  
+
+<a name="see-also"></a>
+
+# See Also
+
+cut(1), jq(1), xmllint(1)
+
+<a name="bugs"></a>
+
+# Bugs
+
+No known bugs.
+
+<a name="author"></a>
+
+# Author
+
+Gergely Gati ([gati.gergely@gmail.com](mailto:gati.gergely@gmail.com))
+
+<a name="copyright"></a>
+
+# Copyright
+
+Copyright © 2024 Gergely Gati
+
+BSD-3-Clause license
