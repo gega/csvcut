@@ -22,3 +22,7 @@ usage: csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [file ...]
   -o type
 
    Choose output type. Default is 'csv'. Available output formats are: csv, json and xml. Only csv can keep the header row, other types implicitely sets the -H flag.
+
+  -c field:command
+
+   On the field # provided, execute an external command which can process the field and print out the changed field to stdout. See procfield.sh for details.
