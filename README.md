@@ -9,7 +9,6 @@ Argument parsing based on [BSD cut.c](https://github.com/freebsd/freebsd-src/blo
 csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
 ```
 
-<a name="description"></a>
 
 # Description
 
@@ -17,12 +16,11 @@ csvcut is a cut implementation for csv files.
 Parsing the input as csv formatted text file according to RFC 4180 with the exception that line
 ending is based on the system default.
 
-<a name="options"></a>
 
 # Options
 
 
-* **-f **_fields_  
+ **-f** _fields_  
   Select fields. This could be one range or several ranges separated by comma.
   A range is one of the following:
   
@@ -35,34 +33,34 @@ ending is based on the system default.
     * **-M**  
       all fields from the first to M'th
   
-* **-H**  
+ **-H**  
   Skip the first row from the output. The first row usually the header for csv
   files. This option is implicitly set when choosing an output format other
   than csv.
   
-* **-d **_delim_  
+* **-d** _delim_  
   Choose a delimiter for the input csv. Default is a comma ',' character.
   
-* **-D **_delim_  
+ **-D** _delim_  
   Choose a delimiter for the output csv. Default is a comma ',' character.
   This option is ignored for any output format except csv.
   
-* **-o **_format_  
+ **-o** _format_  
   Specify the output format. Default is 'csv'. Choose from the following
   formats:
-*     * csv  
+   * csv  
       Default csv format
     * json  
       JSON output. Requires csv input with header row. The **-H** option is implicitly set
     * xml  
       XML output. Requires csv input with header row. The **-H** option is implicitly set.
   
-* **-c **_field:command_  
+ **-c** _field:command_  
   For the specified field, calls the given command and the standard output
   from the command will be placed instead of the field actual value. Can be
   used multiple times for different fields. The
   passed arguments to the command:
-*   
+   
     * 1  
       column number in the input file
     * 2  
@@ -72,32 +70,6 @@ ending is based on the system default.
     * 4  
       actual field value
   
-* **-h**  
+ **-h**  
   Summary of command line arguments and exit
   
-
-<a name="see-also"></a>
-
-# See Also
-
-cut(1), jq(1), xmllint(1)
-
-<a name="bugs"></a>
-
-# Bugs
-
-No known bugs.
-
-<a name="author"></a>
-
-# Author
-
-Gergely Gati ([gati.gergely@gmail.com](mailto:gati.gergely@gmail.com))
-
-<a name="copyright"></a>
-
-# Copyright
-
-Copyright © 2024 Gergely Gati
-
-BSD-3-Clause license
