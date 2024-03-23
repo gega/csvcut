@@ -5,7 +5,7 @@ Parsing is based on [ccsv](https://github.com/gega/ccsv)
 
 Argument parsing based on [BSD cut.c](https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c)
 
-usage: csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [file ...]
+usage: csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
 
   -f list
   
