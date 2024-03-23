@@ -1,0 +1,226 @@
+[
+  {
+    "1Unique Qualifier Code": "B",
+    "4Considerations": "This is not a QA problem; rather it gives the reason for a null value for mean Secchi depth."
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q",
+    "4Considerations": "Use this code for atypical QC issues; comment required"
+  },
+  {
+    "1Unique Qualifier Code": "Q01",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q02",
+    "4Considerations": "Use when blank result exceeds Lab Reporting Limit for analyte"
+  },
+  {
+    "1Unique Qualifier Code": "Q03",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q04",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q05",
+    "4Considerations": "consider comment explaining whether value was above or below range"
+  },
+  {
+    "1Unique Qualifier Code": "Q06",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q07",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q08",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q09",
+    "4Considerations": "Consider using with Q10"
+  },
+  {
+    "1Unique Qualifier Code": "Q10",
+    "4Considerations": "consider comment (i.e. \"benthic grab depth less \r\nthan 7 cm,\" etc.)"
+  },
+  {
+    "1Unique Qualifier Code": "Q11",
+    "4Considerations": "\"lab report available upon request\" comment required with this code only if result removed from NARS analysis."
+  },
+  {
+    "1Unique Qualifier Code": "Q12",
+    "4Considerations": "If fewer than required, consider removing from NARS analysis; consider comment with number of replicates tested of number required."
+  },
+  {
+    "1Unique Qualifier Code": "Q13",
+    "4Considerations": "consider removing from NARS analysis; consider comment with minimum requirement percentage.  Include lab comments if applicable."
+  },
+  {
+    "1Unique Qualifier Code": "Q14",
+    "4Considerations": "use in hydroprofile with one of the following comments: Less than three PAR records; Unacceptable regression; UW values suspect; AMB values suspect"
+  },
+  {
+    "1Unique Qualifier Code": "Q15",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q16",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q17",
+    "4Considerations": "requires a comment indicating the number of the coellutant, if available.  If not available, comment states coellutant number unavailable."
+  },
+  {
+    "1Unique Qualifier Code": "Q18",
+    "4Considerations": "Use this comment to indicate whenever grab type, grab area or grab depth record was changed to standardize information across field teams.  Consider comment explaining change."
+  },
+  {
+    "1Unique Qualifier Code": "Q19",
+    "4Considerations": "Assign this code where labs did not report QC data such as duplicates, blank or matrix spikes, or the lab reported incomplete QC data or did not report MDLs while reporting results as non-detects."
+  },
+  {
+    "1Unique Qualifier Code": "Q20",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q21",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q22",
+    "4Considerations": "Flag non-target data provided by labs with this code."
+  },
+  {
+    "1Unique Qualifier Code": "Q23",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "Q24",
+    "4Considerations": "Use to identify unresolvable sample ID errors of any kind.  Consider removing from analysis depending on severity of error.  Comment explaining error is recommended."
+  },
+  {
+    "1Unique Qualifier Code": "Q25",
+    "4Considerations": "Use to identify data or samples that were collected outside of the allowable distance from the X-Site. Consider also flagging with \"R\" code."
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "J",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "J01",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "J02",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "J03",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "J04",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "N",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "L",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "R",
+    "4Considerations": "consider comment if not explained by other QA code"
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "_T",
+    "4Considerations": "apply to anything where there is a high likelihood that a value is subject to change"
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  },
+  {
+    "1Unique Qualifier Code": "",
+    "4Considerations": ""
+  }
+]

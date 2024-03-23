@@ -1,4 +1,4 @@
-Unique Qualifier Code,Definition,,Considerations
+1Unique Qualifier Code,2Definition,3,4Considerations
 B,Clear to bottom; indicates where no Secchi measurements were possible because the disk did not disappear.,,This is not a QA problem; rather it gives the reason for a null value for mean Secchi depth.
 ,,,
 Q,Did not meet quality control requirements,,Use this code for atypical QC issues; comment required
