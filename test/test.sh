@@ -29,10 +29,10 @@ TMP=$(mktemp)
 
 for (( i=0; i<${#tests[@]}; i++ ));
 do
-  HASH=$(echo "../csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  HASH=$(echo "../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
   if [ x"${hash[$i]}" != x"$HASH" ]; then
     echo "test #$i FAILED [stderr: $(cat $TMP)]"
-    echo "../csvcut ${tests[$i]} | diff tout/T${i}.tout -" | sh
+    echo "../src/csvcut ${tests[$i]} | diff tout/T${i}.tout -" | sh
   fi
 done
 
