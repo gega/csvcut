@@ -26,14 +26,22 @@ hash=(
 )
 
 TMP=$(mktemp)
+XML=$(mktemp)
 
 for (( i=0; i<${#tests[@]}; i++ ));
 do
-  HASH=$(echo "../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  HASH=$(echo "valgrind --xml=yes --xml-file=$XML ../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
   if [ x"${hash[$i]}" != x"$HASH" ]; then
     echo "test #$i FAILED [stderr: $(cat $TMP)]"
     echo "../src/csvcut ${tests[$i]} | diff tout/T${i}.tout -" | sh
   fi
+  ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
+  if [ $ER -gt 1 ]; then
+    echo "test #$i FAILED [valgrind error]"
+    echo "../src/csvcut ${tests[$i]}"
+    cat $XML
+  fi
 done
 
 rm -f $TMP
+rm -f $XML

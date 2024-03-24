@@ -297,7 +297,7 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
 static int csv_cut(FILE *fp, const char *fnam, char dchar)
 {
   struct ccsv c;
-  char *f,typ,lastchar;
+  char *f,typ='\0',lastchar;
   char *buf;
   int bufsiz,lnxsiz;
   char *end;
