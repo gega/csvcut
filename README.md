@@ -5,9 +5,10 @@ Parsing is based on [ccsv](https://github.com/gega/ccsv)
 
 Generate makefiles with:
 
-$ autoreconf -i 
-$ autoconf
+```
+$ ./autogen.sh
 $ ./configure
+```
 
 and make or make install
 
