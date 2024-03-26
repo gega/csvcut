@@ -10,7 +10,7 @@ $ ./autogen.sh
 $ ./configure
 ```
 
-and make or make install
+and make, make check and make install
 
 
 Argument parsing based on [BSD cut.c](https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c)
