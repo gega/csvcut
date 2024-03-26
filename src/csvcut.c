@@ -420,6 +420,7 @@ static char *parse_range(char *s, char d, int *min, int *max)
   char *ret=NULL;
   
   if(NULL==s||NULL==min||NULL==max||'\0'==d||strlen(s)<3) return(NULL);
+  /* TODO: parse actual range instead of just one item */
   *min=*max=atoi(s);
   if(0>=*min||0>=*max) return(NULL);
   ret=strchr(s,d);
