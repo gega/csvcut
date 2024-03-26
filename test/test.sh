@@ -5,14 +5,21 @@
 # https://www.epa.gov/sites/default/files/2016-01/ncca_qa_codes.csv
 # https://go.microsoft.com/fwlink/?LinkID=521962
 
+STYLE=$1
+WHERE=$(dirname "$0")
+
+if [ x"$STYLE" == x"" ]; then
+  STYLE=auto
+fi
+
 tests=(
-    "-H -f4-5,-2,8- organizations-100.csv"
-    "-o json -f4-5,-2,8- organizations-100.csv|jq ."
-    "customers-100.csv"
-    "-o json -f1,4 ncca_qa_codes.csv|jq ."
-    "-o json -f12-,1 -d ';' FinancialSample.csv|jq ."
-    "-o xml customers-100.csv|xmllint --format -"
-    "-H -f 2-4 customers-100.csv -c 2:./procfield.sh"
+    "-H -f4-5,-2,8- $WHERE/organizations-100.csv"
+    "-o json -f4-5,-2,8- $WHERE/organizations-100.csv|jq ."
+    "$WHERE/customers-100.csv"
+    "-o json -f1,4 $WHERE/ncca_qa_codes.csv|jq ."
+    "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv|jq ."
+    "-o xml $WHERE/customers-100.csv|xmllint --format -"
+    "-H -f 2-4 $WHERE/customers-100.csv -c 2:$WHERE/procfield.sh"
 )
 
 hash=(
@@ -25,23 +32,45 @@ hash=(
     "21030d2c89b6ba6ebac76d8b9e3bd765"
 )
 
+RESP=0
+
 TMP=$(mktemp)
 XML=$(mktemp)
 
 for (( i=0; i<${#tests[@]}; i++ ));
 do
-  HASH=$(echo "valgrind --xml=yes --xml-file=$XML ../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  FAIL=0
   if [ x"${hash[$i]}" != x"$HASH" ]; then
-    echo "test #$i FAILED [stderr: $(cat $TMP)]"
-    echo "../src/csvcut ${tests[$i]} | diff tout/T${i}.tout -" | sh
+    if [ x"$STYLE" == x"auto" ]; then
+      echo "FAIL: test #$i"
+    else
+      echo "test #$i FAILED [stderr: $(cat $TMP)]"
+      echo "$WHERE/../src/csvcut ${tests[$i]} | diff $WHERE/tout/T${i}.tout -" | sh
+    fi
+    RESP=1
+    FAIL=1
   fi
   ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
   if [ $ER -gt 1 ]; then
-    echo "test #$i FAILED [valgrind error]"
-    echo "../src/csvcut ${tests[$i]}"
-    cat $XML
+    if [ x"$STYLE" == x"auto" ]; then
+      echo "FAIL: mem  #$i"
+    else
+      echo "test #$i FAILED [valgrind error]"
+      echo "$WHERE/../src/csvcut ${tests[$i]}"
+      cat $XML
+    fi
+    RESP=1
+    FAIL=2
+  fi
+  if [ $FAIL -eq 0 ]; then
+    if [ x"$STYLE" == x"auto" ]; then
+      echo "PASS: case #$i"
+    fi
   fi
 done
 
 rm -f $TMP
 rm -f $XML
+
+exit $RESP
