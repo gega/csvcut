@@ -34,11 +34,16 @@
 #include <getopt.h>
 #include <err.h>
 #include <ctype.h>
+#include "config.h"
 
 #include "ccsv.h" /* https://github.com/gega/ccsv */
 
 #define BUFCHUNK (512)
 #define FLDBUFSIZ (256)
+#define TAG "csvcut"
+#ifndef VERSION_NUMBER
+#error Missing VERSION_NUMBER macro
+#endif
 
 
 enum outtype
@@ -72,6 +77,13 @@ static char Dchar[]=","; /* default output delimiter is ',' */
 static char **cb=NULL; /* callout command names indexed for fields */
 static int cbsize=0; /* number of callout commands -- should be >= # fields or 0 */
 
+
+static void version(void)
+{
+  fprintf(stderr,"%s %s\n",TAG,VERSION_NUMBER);
+  fprintf(stderr,"Copyright (C) 2024 Gergely Gati\nBSD 3-Clause License\n");
+  exit(0);
+}
 
 /* from cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
  */
@@ -393,10 +405,10 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   return(0);
 }
 
-static void usage(char *argv0)
+static void usage(char *argv0, int st)
 {
   (void)fprintf(stderr, "usage: %s [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]\n", argv0);
-  exit(1);
+  exit(st);
 }
 
 static void get_type(char *type)
@@ -472,7 +484,7 @@ int main(int argc, char *argv[])
   int ch, rval;
   char dchar=','; /* default delimiter is ',' */
 
-  while ((ch = getopt(argc, argv, "d:f:Hho:D:c:")) != -1)
+  while ((ch = getopt(argc, argv, "d:f:Hho:D:c:v")) != -1)
   {
     switch(ch) 
     {
@@ -497,11 +509,14 @@ int main(int argc, char *argv[])
         get_type(optarg);
         break;
       case 'h':
-        usage(argv[0]);
+        usage(argv[0],0);
+        break;
+      case 'v':
+        version();
         break;
       case '?':
       default:
-        usage(argv[0]);
+        usage(argv[0],1);
     }
   }
   argc -= optind;
