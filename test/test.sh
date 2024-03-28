@@ -5,70 +5,108 @@
 # https://www.epa.gov/sites/default/files/2016-01/ncca_qa_codes.csv
 # https://go.microsoft.com/fwlink/?LinkID=521962
 
-STYLE=$1
 WHERE=$(dirname "$0")
 
-if [ x"$STYLE" == x"" ]; then
-  STYLE=auto
-fi
+testno=0
+valgrind=0
+output_file=""
 
 tests=(
     "-H -f4-5,-2,8- $WHERE/organizations-100.csv"
-    "-o json -f4-5,-2,8- $WHERE/organizations-100.csv|jq ."
+    "-o json -f4-5,-2,8- $WHERE/organizations-100.csv"
     "$WHERE/customers-100.csv"
-    "-o json -f1,4 $WHERE/ncca_qa_codes.csv|jq ."
-    "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv|jq ."
-    "-o xml $WHERE/customers-100.csv|xmllint --format -"
+    "-o json -f1,4 $WHERE/ncca_qa_codes.csv"
+    "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"
+    "-o xml $WHERE/customers-100.csv"
     "-H -f 2-4 $WHERE/customers-100.csv -c 2:$WHERE/procfield.sh"
 )
 
 hash=(
     "6175720a6ae45c47d5e4843fec16d7f6"
-    "8f3fe0123bd61f002b9f89e74213ad05"
+    "06cafa07b2393e688f3d038f4e07e4b1"
     "2982e2838f38fa8043cdc440a6efbadc"
-    "38ae0da7c1bcd42b90678d6b332222b5"
-    "8ac35e68a3e32d675ef2c1e1ec00bb2f"
-    "3d27e976a63b5a4d03c0273323a3b058"
+    "c5bac232bfc3ecb3678bdc7291fa1a42"
+    "2f3728c78254f3087d74b2bd1503eae4"
+    "54284c7f40073a427b582f54bd46fc86"
     "21030d2c89b6ba6ebac76d8b9e3bd765"
 )
+
+function show_help()
+{
+  echo "Usage $(basename $0) "
+  exit 0
+}
+
+while getopts "h?vo:t:T" opt; do
+  case "$opt" in
+    h|\?)
+      show_help
+      exit 0
+      ;;
+    v)  valgrind=1
+      ;;
+    t)  testno=$OPTARG
+      ;;
+    T)  echo "${#tests[@]}"
+        exit 0
+      ;;
+    o)  output_file=$OPTARG
+      ;;
+  esac
+done
+
+if [[ "$(basename $0)" == *"_T"* ]]; then
+  testno=$(echo "$(basename $0 .sh)" | sed -e 's/.*_T//g')
+fi
+
+if [ $testno -lt 1 ]; then
+  exit 1
+fi
+
+testno=$((testno-1))
 
 RESP=0
 
 TMP=$(mktemp)
 XML=$(mktemp)
 
-for (( i=0; i<${#tests[@]}; i++ ));
-do
-  HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$i]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
-  FAIL=0
-  if [ x"${hash[$i]}" != x"$HASH" ]; then
-    if [ x"$STYLE" == x"auto" ]; then
-      echo "FAIL: test #$i"
-    else
-      echo "test #$i FAILED [stderr: $(cat $TMP)]"
-      echo "$WHERE/../src/csvcut ${tests[$i]} | diff $WHERE/tout/T${i}.tout -" | sh
-    fi
-    RESP=1
-    FAIL=1
+if [ x"$output_file" != x"" ]; then
+  echo -e "----------------------------------------\n$(date)\nRunning test #${testno}" >>$output_file
+fi
+if [ $valgrind -ne 0 ]; then
+  HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+else
+  HASH=$(echo "$WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+fi
+echo "$testno: $HASH"
+FAIL=0
+if [ x"${hash[$testno]}" != x"$HASH" ]; then
+  if [ x"$output_file" != x"" ]; then
+    echo "  test #${tst} FAILED" >>$output_file
+    echo "  output: $(cat $TMP)"
+    echo "  diff:"
+    echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${testno}.tout -" | sh >>$output_file
   fi
+  RESP=1
+  FAIL=1
+fi
+if [ $valgrind -ne 0 ]; then
   ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
   if [ $ER -gt 1 ]; then
-    if [ x"$STYLE" == x"auto" ]; then
-      echo "FAIL: mem  #$i"
-    else
-      echo "test #$i FAILED [valgrind error]"
-      echo "$WHERE/../src/csvcut ${tests[$i]}"
-      cat $XML
+    if [ x"$output_file" != x"" ]; then
+      echo "test #$testno FAILED [valgrind error]" >>$output_file
+      echo "$WHERE/../src/csvcut ${tests[$testno]}" >>$output_file
+      cat $XML >>$output_file
     fi
     RESP=1
     FAIL=2
   fi
-  if [ $FAIL -eq 0 ]; then
-    if [ x"$STYLE" == x"auto" ]; then
-      echo "PASS: case #$i"
-    fi
+fi
+if [ $FAIL -eq 0 ]; then
+  if [ x"$output_file" != x"" ]; then
+    echo "PASS: case #$testno" >>$output_file
   fi
-done
+fi
 
 rm -f $TMP
 rm -f $XML
