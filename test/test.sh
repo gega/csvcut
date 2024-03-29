@@ -18,7 +18,7 @@ tests=(
     "-o json -f1,4 $WHERE/ncca_qa_codes.csv"
     "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"
     "-o xml $WHERE/customers-100.csv"
-    "-H -f 2-4 $WHERE/customers-100.csv -c 2:$WHERE/procfield.sh"
+    "-H -f 2-4 -c 2:$WHERE/procfield $WHERE/customers-100.csv"
 )
 
 hash=(
@@ -78,13 +78,12 @@ if [ $valgrind -ne 0 ]; then
 else
   HASH=$(echo "$WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
 fi
-echo "$testno: $HASH"
 FAIL=0
 if [ x"${hash[$testno]}" != x"$HASH" ]; then
   if [ x"$output_file" != x"" ]; then
     echo "  test #${tst} FAILED" >>$output_file
-    echo "  output: $(cat $TMP)"
-    echo "  diff:"
+    echo "  output: $(cat $TMP)" >>$output_file
+    echo "  diff:" >>$output_file
     echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${testno}.tout -" | sh >>$output_file
   fi
   RESP=1

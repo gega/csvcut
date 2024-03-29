@@ -293,12 +293,23 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
         l=fread(&local_field[ln],1,FLDBUFSIZ,p);
         if(l==FLDBUFSIZ) local_field=realloc(local_field,ln+FLDBUFSIZ);
       }
-      pclose(p);
-      if(ln>0)
+      if(0!=(pclose(p)))
+      {
+        fprintf(stderr,"Failed to call '%s'\n",cb[col]);
+        free(cb[col]);
+        cb[col]=NULL;
+      }
+      else if(ln>0)
       {
         local_field[ln]='\0';
         ret=local_field;
       }
+    }
+    else
+    {
+      fprintf(stderr,"Cannot open '%s'\n",cb[col]);
+      free(cb[col]);
+      cb[col]=NULL;
     }
     if(cmd!=buf&&cmd!=NULL) free(cmd);
   }
