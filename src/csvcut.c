@@ -34,6 +34,8 @@
 #include <getopt.h>
 #include <err.h>
 #include <ctype.h>
+#include <limits.h>
+
 #include "config.h"
 
 #include "ccsv.h" /* https://github.com/gega/ccsv */
@@ -44,6 +46,7 @@
 #ifndef VERSION_NUMBER
 #error Missing VERSION_NUMBER macro
 #endif
+#define INF (INT_MAX)
 
 
 enum outtype
@@ -126,7 +129,7 @@ static void get_list(char *list)
       setautostart = 1;
     }
     if (isdigit((unsigned char)*p)) {
-      start = stop = strtol(p, &p, 10);
+      start = stop = (size_t)strtol(p, &p, 10);
       if (setautostart && start > autostart)
         autostart = start;
     }
@@ -206,7 +209,7 @@ static char *escape(char *str)
   {
     buflen=len*2;
     if(NULL!=buf) free(buf);
-    buf=malloc(buflen+1);
+    if(NULL==(buf=malloc(buflen+1))) err(1, "malloc");
     buf[0]='\0';
   }
   for(b=buf+1;*str;str++)
@@ -274,7 +277,7 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
   if(local_field==NULL)
   {
     local_field_size=FLDBUFSIZ;
-    local_field=malloc(local_field_size);
+    if(NULL==(local_field=malloc(local_field_size))) err(1, "malloc");
     local_field[0]='\0';
   }
   if(cbsize>col&&NULL!=cb[col])
@@ -282,7 +285,7 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
     cmdsiz=1+snprintf(cmd,cmdsiz,"%s %d %d \"%s\" \"%s\"",cb[col],col,prcol,fname,field);
     if(cmdsiz>sizeof(buf))
     {
-      cmd=malloc(cmdsiz);
+      if(NULL==(cmd=malloc(cmdsiz))) err(1, "malloc");
       snprintf(cmd,cmdsiz,"%s %d %d \"%s\" \"%s\"",cb[col],col,prcol,fname,field);
       
     }
@@ -291,7 +294,7 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
       for(ln=0,l=FLDBUFSIZ;l==FLDBUFSIZ;ln+=l)
       {
         l=fread(&local_field[ln],1,FLDBUFSIZ,p);
-        if(l==FLDBUFSIZ) local_field=realloc(local_field,ln+FLDBUFSIZ);
+        if(l==FLDBUFSIZ) if(NULL==(local_field=realloc(local_field,ln+FLDBUFSIZ))) err(1, "realloc");
       }
       if(0!=(pclose(p)))
       {
@@ -331,7 +334,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   void (*prfld)(char * const, int, int, char * const);
 
   bufsiz=BUFCHUNK;
-  buf=malloc(bufsiz);
+  if(NULL==(buf=malloc(bufsiz))) err(1, "malloc");
   end=buf;
   countq=countquotes_fld;
   prfld=print_field_csv;
@@ -363,6 +366,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
           bufsiz+=BUFCHUNK;
           lnxsiz+=BUFCHUNK;
           buf=realloc(buf,bufsiz);
+          if(NULL==buf) err(1, "realloc");
         }
       }
       noq=noqc%2;
@@ -385,6 +389,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
         if(lineno==1)
         {
           fields[i]=strdup(f);
+          if(NULL==fields[i]) err(1, "strdup");
           if(OT_XML==otype) xmltagsanitize(fields[i]);
         }
         if(Hflag&&lineno==1) continue;
@@ -443,10 +448,29 @@ static char *parse_range(char *s, char d, int *min, int *max)
   char *ret=NULL;
   
   if(NULL==s||NULL==min||NULL==max||'\0'==d||strlen(s)<3) return(NULL);
-  /* TODO: parse actual range instead of just one item */
-  *min=*max=atoi(s);
-  if(0>=*min||0>=*max) return(NULL);
-  ret=strchr(s,d);
+  *min=*max=(int)strtol(s,&ret,10);
+  if(*min<0)
+  {
+    printf("kisebb\n");
+    *max=-*min;
+    *min=1;
+  }
+  else
+  {
+    if(*ret=='-')
+    {
+      s=++ret;
+      if(*s!=':') *max=(int)strtol(s,&ret,10);
+      else *max=INF;
+    }
+    if(*min>*max)
+    {
+      int t=*min;
+      *min=*max;
+      *max=t;
+    }
+  }
+  if(0>=*min||0>=*max||d!=*ret) return(NULL);
   if(NULL!=ret) ret++;
   return(ret);
 }
@@ -480,11 +504,12 @@ static void setup_callout(char *arg)
     else
     {
       cb=realloc(cb,sizeof(char *)*(max+1));
+      if(NULL==cb) err(1, "realloc");
       for(i=cbsize;i<max+1;i++) cb[i]=NULL;
       cbsize=max+1;
     }
   }
-  for(i=min;i<max+1;i++) cb[i]=strdup(cmd);
+  for(i=min;i<max+1;i++) if(NULL==(cb[i]=strdup(cmd))) err(1, "malloc");
 }
 
 /* based on cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c

@@ -10,6 +10,7 @@ WHERE=$(dirname "$0")
 testno=0
 valgrind=0
 output_file=""
+all=0
 
 tests=(
     "-H -f4-5,-2,8- $WHERE/organizations-100.csv"
@@ -19,6 +20,7 @@ tests=(
     "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"
     "-o xml $WHERE/customers-100.csv"
     "-H -f 2-4 -c 2:$WHERE/procfield $WHERE/customers-100.csv"
+    "-H -f 2-4 -c 1-3:$WHERE/procfield customers-100.csv"
 )
 
 hash=(
@@ -29,6 +31,7 @@ hash=(
     "2f3728c78254f3087d74b2bd1503eae4"
     "54284c7f40073a427b582f54bd46fc86"
     "21030d2c89b6ba6ebac76d8b9e3bd765"
+    "695793fb53972160ec1f87d62bd47aab"
 )
 
 function show_help()
@@ -37,13 +40,16 @@ function show_help()
   exit 0
 }
 
-while getopts "h?vo:t:T" opt; do
+while getopts "h?vo:t:Ta" opt; do
   case "$opt" in
     h|\?)
       show_help
       exit 0
       ;;
     v)  valgrind=1
+      ;;
+    a)  all=1
+        testno=1
       ;;
     t)  testno=$OPTARG
       ;;
@@ -70,42 +76,51 @@ RESP=0
 TMP=$(mktemp)
 XML=$(mktemp)
 
-if [ x"$output_file" != x"" ]; then
-  echo -e "----------------------------------------\n$(date)\nRunning test #${testno}" >>$output_file
+maxtest=$((testno+1))
+if [ $all -eq 1 ]; then
+  maxtest=${#tests[@]}
 fi
-if [ $valgrind -ne 0 ]; then
-  HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
-else
-  HASH=$(echo "$WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
-fi
-FAIL=0
-if [ x"${hash[$testno]}" != x"$HASH" ]; then
+
+for((i=$testno;i<$maxtest;i++))
+do
+  testno=$i
   if [ x"$output_file" != x"" ]; then
-    echo "  test #${tst} FAILED" >>$output_file
-    echo "  output: $(cat $TMP)" >>$output_file
-    echo "  diff:" >>$output_file
-    echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${testno}.tout -" | sh >>$output_file
+    echo -e "----------------------------------------\n$(date)\nRunning test #${testno}" >>$output_file
   fi
-  RESP=1
-  FAIL=1
-fi
-if [ $valgrind -ne 0 ]; then
-  ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
-  if [ $ER -gt 1 ]; then
+  if [ $valgrind -ne 0 ]; then
+    HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  else
+    HASH=$(echo "$WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
+  fi
+  FAIL=0
+  if [ x"${hash[$testno]}" != x"$HASH" ]; then
     if [ x"$output_file" != x"" ]; then
-      echo "test #$testno FAILED [valgrind error]" >>$output_file
-      echo "$WHERE/../src/csvcut ${tests[$testno]}" >>$output_file
-      cat $XML >>$output_file
+      echo "  test #${tst} FAILED" >>$output_file
+      echo "  output: $(cat $TMP)" >>$output_file
+      echo "  diff:" >>$output_file
+      echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${testno}.tout -" | sh >>$output_file
     fi
     RESP=1
-    FAIL=2
+    FAIL=1
   fi
-fi
-if [ $FAIL -eq 0 ]; then
-  if [ x"$output_file" != x"" ]; then
-    echo "PASS: case #$testno" >>$output_file
+  if [ $valgrind -ne 0 ]; then
+    ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
+    if [ $ER -gt 1 ]; then
+      if [ x"$output_file" != x"" ]; then
+        echo "test #$testno FAILED [valgrind error]" >>$output_file
+        echo "$WHERE/../src/csvcut ${tests[$testno]}" >>$output_file
+        cat $XML >>$output_file
+      fi
+      RESP=1
+      FAIL=2
+    fi
   fi
-fi
+  if [ $FAIL -eq 0 ]; then
+    if [ x"$output_file" != x"" ]; then
+      echo "PASS: case #$testno" >>$output_file
+    fi
+  fi
+done
 
 rm -f $TMP
 rm -f $XML
