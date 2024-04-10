@@ -19,19 +19,21 @@ tests=(
     "-o json -f1,4 $WHERE/ncca_qa_codes.csv"
     "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"
     "-o xml $WHERE/customers-100.csv"
-    "-H -f 2-4 -c 2:$WHERE/procfield $WHERE/customers-100.csv"
-    "-H -f 2-4 -c 1-3:$WHERE/procfield customers-100.csv"
+    "-H -f 2-4 -c 3:$WHERE/procfield $WHERE/customers-100.csv"
+    "-H -f 2-4 -c 2-4:$WHERE/procfield customers-100.csv"
+    "-H -f 3-4,11 -c 3-4/11:$WHERE/procfield customers-100.csv"
 )
 
 hash=(
-    "6175720a6ae45c47d5e4843fec16d7f6"
-    "06cafa07b2393e688f3d038f4e07e4b1"
-    "2982e2838f38fa8043cdc440a6efbadc"
-    "c5bac232bfc3ecb3678bdc7291fa1a42"
-    "2f3728c78254f3087d74b2bd1503eae4"
-    "54284c7f40073a427b582f54bd46fc86"
-    "21030d2c89b6ba6ebac76d8b9e3bd765"
-    "695793fb53972160ec1f87d62bd47aab"
+    "6175720a6ae45c47d5e4843fec16d7f6"  # 1
+    "4daf77c78eec8ab89db9476df4d1ae33"  # 2
+    "2982e2838f38fa8043cdc440a6efbadc"  # 3
+    "8da51b6a13bb8cc227313b3d5e9e8527"  # 4
+    "7e00072b9e7d37e6786b0e3c52b90704"  # 5
+    "126c04364792c4c2f63c922c1258c0ed"  # 6
+    "21030d2c89b6ba6ebac76d8b9e3bd765"  # 7
+    "695793fb53972160ec1f87d62bd47aab"  # 8
+    "f2ed118126712ed0c71b643d93c207f1"  # 9
 )
 
 function show_help()
@@ -87,6 +89,12 @@ if [ $all -eq 1 ]; then
   maxtest=${#tests[@]}
 fi
 
+if [ x"$output_file" == x"" ]; then
+  exec > /dev/null
+elif [ x"$output_file" != x"-" ]; then
+  exec >> $output_file
+fi
+
 for((i=$testno;i<$maxtest;i++))
 do
   testno=$i
@@ -95,7 +103,7 @@ do
     ln -s "$WHERE/test.sh" "$WHERE/test_T${thrn}.sh"
   fi
   if [ x"$output_file" != x"" ]; then
-    echo -e "----------------------------------------\n$(date)\nRunning test #${testno}" >>$output_file
+    echo -e "----------------------------------------\n$(date)\nRunning test #${thrn}"
   fi
   if [ $valgrind -ne 0 ]; then
     HASH=$(echo "valgrind --xml=yes --xml-file=$XML $WHERE/../src/csvcut ${tests[$testno]} | md5sum | cut -d' ' -f1" | sh 2>$TMP )
@@ -105,10 +113,10 @@ do
   FAIL=0
   if [ x"${hash[$testno]}" != x"$HASH" ]; then
     if [ x"$output_file" != x"" ]; then
-      echo "  test #${tst} FAILED" >>$output_file
-      echo "  output: $(cat $TMP)" >>$output_file
-      echo "  diff:" >>$output_file
-      echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${testno}.tout -" | sh >>$output_file
+      echo "  test #${thrn} FAILED"
+      echo "  output: $(cat $TMP)"
+      echo "  diff:"
+      echo "$WHERE/../src/csvcut ${tests[$testno]} | diff $WHERE/tout/T${thrn}.tout -" | sh
     fi
     RESP=1
     FAIL=1
@@ -117,9 +125,9 @@ do
     ER=$(cat $XML|awk 'BEGIN {e=0} /errorcounts/ { e=1-e; } // {if(e!=0) print $0;}'|wc -l)
     if [ $ER -gt 1 ]; then
       if [ x"$output_file" != x"" ]; then
-        echo "test #$testno FAILED [valgrind error]" >>$output_file
-        echo "$WHERE/../src/csvcut ${tests[$testno]}" >>$output_file
-        cat $XML >>$output_file
+        echo "test #$thrn FAILED [valgrind error]"
+        echo "$WHERE/../src/csvcut ${tests[$testno]}"
+        cat "$XML"
       fi
       RESP=1
       FAIL=2
@@ -127,7 +135,7 @@ do
   fi
   if [ $FAIL -eq 0 ]; then
     if [ x"$output_file" != x"" ]; then
-      echo "PASS: case #$testno" >>$output_file
+      echo "PASS: case #$thrn"
     fi
   fi
 done

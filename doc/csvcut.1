@@ -65,8 +65,13 @@ XML output. Requires csv input with header row. The \fB\-H\fR option is implicit
 .TP
 .BI "\-c " field:command
 For the specified field, calls the given command and the standard output
-from the command will be placed instead of the field actual value. Can be
-used multiple times for different fields. The
+from the command will be placed instead of the field actual value. 
+Two ranges can be specified, separated by a forward slash '/' character.
+The first range should be one field or a single range and selects the fields
+needs top be rewritten. The second rangeset may contain multiple ranges
+separated by comma ',' character and the selected fields are passed to the
+processing command as extra arguments.
+Can be used multiple times for different fields. The
 passed arguments to the command:
 .TP
 .RS
@@ -83,11 +88,50 @@ name of the field, according to the header row
 .TP
 4
 actual field value
+.TP
+5+
+extra arguments specified by the second range set
 .RE
 
 .TP
 .B \-h
 Summary of command line arguments and exit
+
+.SH EXAMPLES
+
+$ csvcut -H -f 1-3,5,9- -c 2-3/6,8-9:pf_1 -c 5/2,4:pf_2 input.csv
+
+This command will process input.csv, outputting 1,2,3,5,9 and all the rest of
+the columns with processing of 2nd, 3rd and 5th fields, omitting the first
+row. The columns 2 and 3
+will be processed by an executable called pf_1 which will receive the
+following arguments when called for the column 3:
+.TP
+1
+column number in input, value 3
+.TP
+2
+column number in output, value 3
+.TP
+3
+name of the field, the 3rd field of the first row of the input
+.TP
+4
+the value of the 3rd field of the current row
+.TP
+5
+the value of the 6th field of the current row
+.TP
+6
+the value of the 8th field of the current row
+.TP
+7
+the value of the 9th field of the current row
+.RE
+
+The standard output will be used as the column 3 of the generated output.
+The column 5 will be processed by the executable called pf_2 and the extra
+arguments will be the current values of the second and forth columns.
 
 .SH SEE ALSO
 cut(1), jq(1), xmllint(1)
