@@ -36,7 +36,13 @@ hash=(
 
 function show_help()
 {
-  echo "Usage $(basename $0) "
+  echo "Usage $(basename $0)"
+  echo -e "\t-h\t\thelp"
+  echo -e "\t-v\t\tuse valgrind during tests"
+  echo -e "\t-a\t\trun all tests"
+  echo -e "\t-T\t\tprint number of tests"
+  echo -e "\t-t N\t\trun test number #N"
+  echo -e "\t-o file\t\toutput filename"
   exit 0
 }
 
@@ -84,6 +90,10 @@ fi
 for((i=$testno;i<$maxtest;i++))
 do
   testno=$i
+  thrn=$((testno+1))
+  if [ ! -f "$WHERE/test_T${thrn}.sh" ]; then
+    ln -s "$WHERE/test.sh" "$WHERE/test_T${thrn}.sh"
+  fi
   if [ x"$output_file" != x"" ]; then
     echo -e "----------------------------------------\n$(date)\nRunning test #${testno}" >>$output_file
   fi

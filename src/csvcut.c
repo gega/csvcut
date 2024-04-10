@@ -255,7 +255,7 @@ static void print_field_xml(char * const field, int col, int prcol, char * const
   printf("<%s>%s</%s>",fname,field,fname);
 }
 
-static char *check_callout(char * const field, int col, int prcol, char * const fname)
+static char *check_callout(char * const field, int col, int prcol, char * const fname, char **values, int valuescnt)
 {
   static char buf[FLDBUFSIZ];
   static char *local_field=NULL;
@@ -331,6 +331,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   int (*countq)(char const *,int *,char,int *);
   int fldnum=1;
   char **fields=NULL;
+  char **values=NULL;
   void (*prfld)(char * const, int, int, char * const);
 
   bufsiz=BUFCHUNK;
@@ -373,7 +374,11 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
     }
     lineno++;
     countq=countquotes;
-    if(lineno==1) fields=calloc(fldnum,sizeof(char *));
+    if(lineno==1)
+    {
+      fields=calloc(fldnum,sizeof(char *));
+      values=calloc(fldnum,sizeof(char *));
+    }
 
     if('\0'!=buf[0])
     {
@@ -386,6 +391,8 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       ccsv_init_ex(&c,buf,dchar);
       for(i=col=0;NULL!=(f=ccsv_nextfield(&c,&typ));i++)
       {
+        if(i>=fldnum) continue;
+        values[i]=NULL;
         if(lineno==1)
         {
           fields[i]=strdup(f);
@@ -395,8 +402,18 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
         if(Hflag&&lineno==1) continue;
         if(positions==NULL||(autostop>1&&autostop<(i+1))||(maxval>i&&positions[i+1]!=0))
         {
-          f=check_callout(f,i,col,fields[i]);
-          if(NULL!=f) prfld(f,i,col,fields[i]);
+          if(NULL!=f) values[i]=strdup(f);
+          col++;
+        }
+      }
+      for(i=col=0;i<fldnum;i++)
+      {
+        if(NULL!=values[i])
+        {
+          f=check_callout(values[i],i,col,fields[i],values,fldnum);
+          prfld(f,i,col,fields[i]);
+          free(values[i]);
+          values[i]=NULL;
           col++;
         }
       }
@@ -406,6 +423,11 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   }
   if(OT_JSON==otype) printf("\n]\n");
   else if(OT_XML==otype) printf("</row></xml>\n");
+  if(NULL!=values)
+  {
+    free(values);
+    values=NULL;
+  }
   if(NULL!=fields)
   {
     for(i=0;i<fldnum;i++) if(NULL!=fields[i]) free(fields[i]);
@@ -416,7 +438,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   escape(NULL);
   if(NULL!=positions) free(positions);
   positions=NULL;
-  check_callout(NULL,0,0,NULL);
+  check_callout(NULL,0,0,NULL,NULL,0);
 
   return(0);
 }
@@ -451,7 +473,6 @@ static char *parse_range(char *s, char d, int *min, int *max)
   *min=*max=(int)strtol(s,&ret,10);
   if(*min<0)
   {
-    printf("kisebb\n");
     *max=-*min;
     *min=1;
   }
