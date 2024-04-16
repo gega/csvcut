@@ -8,4 +8,7 @@ TESTS = $(check_PROGRAMS) \
         test_T5.sh \
         test_T6.sh \
         test_T7.sh \
-        test_T8.sh
+        test_T8.sh \
+        test_T9.sh \
+        test_T10.sh \
+        test_T11.sh

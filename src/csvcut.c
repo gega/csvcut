@@ -75,18 +75,21 @@ static struct otypes otc[]=
 static char *positions=NULL;
 static size_t autostart, autostop, maxval;
 static int Hflag=0; /* skip first row */
+static int sflag=0; /* skip processing the first row */
+static int qflag=0; /* do not quote fields */
 static enum outtype otype=OT_CSV;
 static char Dchar[]=","; /* default output delimiter is ',' */
 static char **cb=NULL; /* callout command names indexed for fields */
 static int cbsize=0; /* number of callout commands -- should be >= # fields or 0 */
 static int cb_pass_fld_max=0;
 static char *cb_pass_fld=NULL;
+static int *reorder_fields=NULL;
 
 
 static void version(void)
 {
   fprintf(stderr,"%s %s\n",TAG,VERSION_NUMBER);
-  fprintf(stderr,"Copyright (C) 2024 Gergely Gati\nBSD 3-Clause License\n");
+  fprintf(stderr,"Copyright (C) 2024 Gergely Gati\nBSD 3-Clause License\nBuild timestamp: " __DATE__ " " __TIME__ "\n");
   exit(0);
 }
 
@@ -243,7 +246,7 @@ static void xmltagsanitize(char *field)
 
 static void print_field_csv(char * const field, int col, int prcol, char * const fname)
 {
-  printf("%s\"%s\"",(prcol==0?"":Dchar),field);
+  printf("%s%s%s%s",(prcol==0?"":Dchar),(qflag?"":"\""),field,(qflag?"":"\""));
 }
 
 static void print_field_json(char * const field, int col, int prcol, char * const fname)
@@ -295,7 +298,6 @@ static char *check_callout(char * const field, int col, int prcol, char * const 
     if(cs>cmdsiz)
     {
       cs*=2;
-      fprintf(stderr,"cmd size too small %d, allocating %d\n",cmdsiz,cs);
       if(cmd!=buf) free(cmd);
       if(NULL==(cmd=malloc(cs))) err(1, "malloc");
       cmdsiz=cs;
@@ -352,6 +354,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   int fldnum=1;
   char **fields=NULL;
   char **values=NULL;
+  char **procval=NULL;
   void (*prfld)(char * const, int, int, char * const);
 
   bufsiz=BUFCHUNK;
@@ -398,6 +401,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
     {
       fields=calloc(fldnum,sizeof(char *));
       values=calloc(fldnum,sizeof(char *));
+      procval=calloc(fldnum,sizeof(char *));
     }
 
     if('\0'!=buf[0])
@@ -413,6 +417,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       {
         if(i>=fldnum) continue;
         values[i]=NULL;
+        procval[i]=NULL;
         if(lineno==1)
         {
           fields[i]=strdup(f);
@@ -426,16 +431,39 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
           col++;
         }
       }
+      if(Hflag&&lineno==1) continue;
       for(i=col=0;i<fldnum;i++)
       {
         if(NULL!=values[i])
         {
-          f=check_callout(values[i],i,col,fields[i],values,fldnum);
-          prfld(f,i,col,fields[i]);
-          free(values[i]);
-          values[i]=NULL;
+          if(lineno>1||!sflag)
+          {
+            if(NULL!=(f=check_callout(values[i],i,col,fields[i],values,fldnum)))
+            {
+              procval[i]=values[i];
+              values[i]=strdup(f);
+            }
+          }
+          if(NULL==reorder_fields) prfld(values[i],i,col,fields[i]);
           col++;
         }
+      }
+      if(NULL!=reorder_fields)
+      {
+        int j;
+        for(i=0,col=1;0!=reorder_fields[i];i++,col++)
+        {
+          if(abs(reorder_fields[i])>fldnum) continue;
+          if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,fields[reorder_fields[i]-1]);
+          else for(j=-reorder_fields[i];j<=fldnum;j++) prfld(values[j-1],j-1,col,fields[j-1]);
+        }
+      }
+      for(i=0;i<fldnum;i++)
+      {
+        if(NULL!=values[i]) free(values[i]);
+        if(NULL!=procval[i]) free(procval[i]);
+        values[i]=NULL;
+        procval[i]=NULL;
       }
       if(OT_JSON==otype&&lineno>1) printf("}");
       if(!((Hflag&&lineno==1)||OT_JSON==otype)) printf("\n");
@@ -447,6 +475,11 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   {
     free(values);
     values=NULL;
+  }
+  if(NULL!=procval)
+  {
+    free(procval);
+    procval=NULL;
   }
   if(NULL!=fields)
   {
@@ -465,7 +498,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
 
 static void usage(char *argv0, int st)
 {
-  (void)fprintf(stderr, "usage: %s [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field/args:cmd] [file ...]\n", argv0);
+  (void)fprintf(stderr, "usage: %s [-f list|-r list] [-H] [-s] [-q] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field/args:cmd] [file ...]\n", argv0);
   exit(st);
 }
 
@@ -489,10 +522,11 @@ static char *parse_range(char *s, char *d, int *min, int *max)
 {
   char *ret=NULL;
   
-  if(NULL==s||NULL==min||NULL==max||NULL==d||strlen(s)<3) return(NULL);
+  if(NULL==s||NULL==min||NULL==max||NULL==d||strlen(s)<1) return(NULL);
   *min=*max=(int)strtol(s,&ret,10);
   if(*min<0)
   {
+    // negative number means range from 1 to N
     *max=-*min;
     *min=1;
   }
@@ -511,7 +545,8 @@ static char *parse_range(char *s, char *d, int *min, int *max)
       *max=t;
     }
   }
-  if(0>=*min||0>=*max||NULL==strchr(d,*ret)) return(NULL);
+  if(0>=*min||0>=*max||(*ret!='\0'&&NULL==strchr(d,*ret))) return(NULL);
+
   return(ret);
 }
 
@@ -569,6 +604,40 @@ static void setup_callout(char *arg)
   for(i=min;i<max;i++) if(NULL==(cb[i]=strdup(cmd))) err(1, "malloc");
 }
 
+static int *parse_rangeset(char *arg)
+{
+  int neg;
+  char *cmd=arg;
+  int i,rmn,rmx,n;
+  int rs_cnt=0;
+  int *ret=NULL;
+  
+  if(NULL!=arg)
+  {
+    --cmd;
+    do
+    {
+      neg=1;
+      cmd=parse_range(cmd+1,",",&rmn,&rmx);
+      if(NULL==cmd) errx(1, "wrong field range %d",__LINE__);
+      if(rmx==INF)
+      {
+        rmx=rmn;
+        neg=-1;
+      }
+      --rmn;
+      n=rmx-rmn;
+      ret=realloc(ret,(rs_cnt+n+1)*sizeof(int));
+      memset(&ret[rs_cnt],0,(n+1)*sizeof(int));
+      for(i=rs_cnt;i<rs_cnt+n;i++,rmn++) ret[i]=(rmn+1)*neg;
+      rs_cnt+=n;
+    }
+    while(*cmd==',');
+  }
+  
+  return(ret);
+}
+
 /* based on cut.c https://github.com/freebsd/freebsd-src/blob/937a0055858a098027f464abf0b2b1ec5d36748f/usr.bin/cut/cut.c
  */
 int main(int argc, char *argv[])
@@ -577,7 +646,7 @@ int main(int argc, char *argv[])
   int ch, rval;
   char dchar=','; /* default delimiter is ',' */
 
-  while ((ch = getopt(argc, argv, "d:f:Hho:D:c:v")) != -1)
+  while ((ch = getopt(argc, argv, "d:f:Hho:D:c:vsqr:")) != -1)
   {
     switch(ch) 
     {
@@ -593,13 +662,24 @@ int main(int argc, char *argv[])
         if(Dchar[0] == '\0') errx(1, "bad delimiter");
         break;
       case 'f':
+        if(NULL!=reorder_fields) errx(1, "cannot use -f if -r is used");
         get_list(optarg);
+        break;
+      case 'r':
+        if(NULL!=positions) errx(1, "cannot use -r if -f is used");
+        reorder_fields=parse_rangeset(optarg);
         break;
       case 'H':
         Hflag = 1;
         break;
+      case 's':
+        sflag = 1;
+        break;
       case 'o':
         get_type(optarg);
+        break;
+      case 'q':
+        qflag = 1;
         break;
       case 'h':
         usage(argv[0],0);
@@ -633,5 +713,6 @@ int main(int argc, char *argv[])
   else rval = csv_cut(stdin, "stdin", dchar);
   setup_callout(NULL);
   if(NULL!=cb_pass_fld) free(cb_pass_fld);
+  if(NULL!=reorder_fields) free(reorder_fields);
   exit(rval);
 }

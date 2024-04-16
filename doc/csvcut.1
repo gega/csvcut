@@ -4,15 +4,17 @@
 .SH NAME
 csvcut \- select/process columns from csv files
 .SH SYNOPSIS
-csvcut [-f list] [-H] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field:cmd] [file ...]
+csvcut [-f list|-r list] [-H] [-s] [-q] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field/args:cmd] [file ...]
 .SH DESCRIPTION
 csvcut is a cut implementation for csv files.
 Parsing the input as csv formatted text file according to RFC 4180 with the exception that line
 ending is based on the system default.
 .SH OPTIONS
+
 .TP
 .BI "\-f " fields
 Select fields. This could be one range or several ranges separated by comma.
+This option cannot be used together with the \-r option.
 A range is one of the following:
 
 .RS
@@ -31,10 +33,24 @@ all fields from the first to M'th
 .RE
 
 .TP
+.BI "\-r " fields
+Select fields. Ranges should be described the same way as for the \-f
+argument. This option will reorder the input columns in the order of the
+range definitions. A column can appear multiple times in the range set and
+it will appear multiple times in the output as well.
+This option cannot be used together with the \-f option.
+.RE
+
+.TP
 .B \-H
 Skip the first row from the output. The first row usually the header for csv
 files. This option is implicitly set when choosing an output format other
 than csv.
+
+.TP
+.B \-s
+Keep the first row unprocessed, do not call callout commands just copy the
+input fields.
 
 .TP
 .BI "\-d " delim

@@ -13,15 +13,17 @@ output_file=""
 all=0
 
 tests=(
-    "-H -f4-5,-2,8- $WHERE/organizations-100.csv"
-    "-o json -f4-5,-2,8- $WHERE/organizations-100.csv"
-    "$WHERE/customers-100.csv"
-    "-o json -f1,4 $WHERE/ncca_qa_codes.csv"
-    "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"
-    "-o xml $WHERE/customers-100.csv"
-    "-H -f 2-4 -c 3:$WHERE/procfield $WHERE/customers-100.csv"
-    "-H -f 2-4 -c 2-4:$WHERE/procfield customers-100.csv"
-    "-H -f 3-4,11 -c 3-4/11:$WHERE/procfield customers-100.csv"
+    "-H -f4-5,-2,8- $WHERE/organizations-100.csv"		#1
+    "-o json -f4-5,-2,8- $WHERE/organizations-100.csv"		#2
+    "$WHERE/customers-100.csv"					#3
+    "-o json -f1,4 $WHERE/ncca_qa_codes.csv"			#4
+    "-o json -f12-,1 -d ';' $WHERE/FinancialSample.csv"		#5
+    "-o xml $WHERE/customers-100.csv"				#6
+    "-H -f 2-4 -c 3:$WHERE/procfield $WHERE/customers-100.csv"	#7
+    "-H -f 2-4 -c 2-4:$WHERE/procfield customers-100.csv"	#8
+    "-H -f 3-4,11 -c 3-4/11:$WHERE/procfield customers-100.csv"	#9
+    "-H -c 4/1:$WHERE/procfield customers-100.csv"		#10
+    "-r 7-,1,3-4,-2 -H $WHERE/organizations-100.csv"		#11
 )
 
 hash=(
@@ -34,6 +36,8 @@ hash=(
     "21030d2c89b6ba6ebac76d8b9e3bd765"  # 7
     "695793fb53972160ec1f87d62bd47aab"  # 8
     "f2ed118126712ed0c71b643d93c207f1"  # 9
+    "a5069b1a2dfd3789b5545a02fc4d8816"  # 10
+    "ac2afbaa8ee818d4066e9ba3516d67a3"  # 11
 )
 
 function show_help()
