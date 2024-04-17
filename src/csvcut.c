@@ -246,18 +246,18 @@ static void xmltagsanitize(char *field)
 
 static void print_field_csv(char * const field, int col, int prcol, char * const fname)
 {
-  printf("%s%s%s%s",(prcol==0?"":Dchar),(qflag?"":"\""),field,(qflag?"":"\""));
+  printf("%s%s%s%s",(prcol==0?"":Dchar),(qflag?"":"\""),(NULL==field?"":field),(qflag?"":"\""));
 }
 
 static void print_field_json(char * const field, int col, int prcol, char * const fname)
 {
-  printf("%s\"%s\":\"%s\"",(prcol==0?"{":","),fname,escape(field));
+  printf("%s\"%s\":\"%s\"",(prcol==0?"{":","),fname,(NULL==field?"":escape(field)));
 }
 
 static void print_field_xml(char * const field, int col, int prcol, char * const fname)
 {
   if(prcol==0) printf("<row>");
-  printf("<%s>%s</%s>",fname,field,fname);
+  printf("<%s>%s</%s>",fname,(NULL==field?"":field),fname);
 }
 
 static char *check_callout(char * const field, int col, int prcol, char * const fname, char **values, int valuescnt)
@@ -451,11 +451,12 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       if(NULL!=reorder_fields)
       {
         int j;
-        for(i=0,col=1;0!=reorder_fields[i];i++,col++)
+        for(i=0,col=0;0!=reorder_fields[i];i++,col++)
         {
+          if(reorder_fields[i]==INF) prfld("",0,col,"");
           if(abs(reorder_fields[i])>fldnum) continue;
           if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,fields[reorder_fields[i]-1]);
-          else for(j=-reorder_fields[i];j<=fldnum;j++) prfld(values[j-1],j-1,col,fields[j-1]);
+          else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,fields[j-1]);
         }
       }
       for(i=0;i<fldnum;i++)
@@ -529,9 +530,7 @@ static char *parse_range(char *s, char *d, int *min, int *max)
     // negative number means range from 1 to N
     *max=-*min;
     *min=1;
-  }
-  else
-  {
+  } else {
     if(*ret=='-')
     {
       s=++ret;
@@ -545,7 +544,7 @@ static char *parse_range(char *s, char *d, int *min, int *max)
       *max=t;
     }
   }
-  if(0>=*min||0>=*max||(*ret!='\0'&&NULL==strchr(d,*ret))) return(NULL);
+  if(0>*min||0>*max||(*ret!='\0'&&NULL==strchr(d,*ret))) return(NULL);
 
   return(ret);
 }
@@ -618,7 +617,7 @@ static int *parse_rangeset(char *arg)
     do
     {
       neg=1;
-      cmd=parse_range(cmd+1,",",&rmn,&rmx);
+      cmd=parse_range(cmd+1,",+",&rmn,&rmx);
       if(NULL==cmd) errx(1, "wrong field range %d",__LINE__);
       if(rmx==INF)
       {
@@ -627,6 +626,7 @@ static int *parse_rangeset(char *arg)
       }
       --rmn;
       n=rmx-rmn;
+      if(*cmd=='+') { ++cmd; rmn=INF-1; }
       ret=realloc(ret,(rs_cnt+n+1)*sizeof(int));
       memset(&ret[rs_cnt],0,(n+1)*sizeof(int));
       for(i=rs_cnt;i<rs_cnt+n;i++,rmn++) ret[i]=(rmn+1)*neg;
