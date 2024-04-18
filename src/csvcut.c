@@ -244,19 +244,25 @@ static void xmltagsanitize(char *field)
   }
 }
 
-static void print_field_csv(char * const field, int col, int prcol, char * const fname)
+static void print_field_csv(char * const field, int col, int prcol, char const * fname)
 {
   printf("%s%s%s%s",(prcol==0?"":Dchar),(qflag?"":"\""),(NULL==field?"":field),(qflag?"":"\""));
 }
 
-static void print_field_json(char * const field, int col, int prcol, char * const fname)
+static void print_field_json(char * const field, int col, int prcol, char const * fname)
 {
   printf("%s\"%s\":\"%s\"",(prcol==0?"{":","),fname,(NULL==field?"":escape(field)));
 }
 
-static void print_field_xml(char * const field, int col, int prcol, char * const fname)
+static void print_field_xml(char * const field, int col, int prcol, char const * fname)
 {
+  char str[32];
   if(prcol==0) printf("<row>");
+  if(fname==NULL||strlen(fname)==0)
+  {
+    snprintf(str,sizeof(str),"column_%d",prcol);
+    fname=str;
+  }
   printf("<%s>%s</%s>",fname,(NULL==field?"":field),fname);
 }
 
@@ -355,7 +361,8 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   char **fields=NULL;
   char **values=NULL;
   char **procval=NULL;
-  void (*prfld)(char * const, int, int, char * const);
+  char **out_fields=NULL;
+  void (*prfld)(char * const, int, int, char const *);
 
   bufsiz=BUFCHUNK;
   if(NULL==(buf=malloc(bufsiz))) err(1, "malloc");
@@ -424,14 +431,24 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
           if(NULL==fields[i]) err(1, "strdup");
           if(OT_XML==otype) xmltagsanitize(fields[i]);
         }
-        if(Hflag&&lineno==1) continue;
+        if(lineno==1&&Hflag) continue;
         if(positions==NULL||(autostop>1&&autostop<(i+1))||(maxval>i&&positions[i+1]!=0))
         {
           if(NULL!=f) values[i]=strdup(f);
           col++;
         }
       }
-      if(Hflag&&lineno==1) continue;
+      if(lineno==1&&NULL!=reorder_fields&&OT_JSON==otype)
+      {
+        char str[32];
+        for(col=0;0!=reorder_fields[col];col++);
+        out_fields=calloc(col+1,sizeof(char *));
+        for(i=0;0!=reorder_fields[i];i++)
+        {
+          snprintf(str,sizeof(str),"%d",i+1);
+          out_fields[i]=strdup(str);
+        }
+      }
       for(i=col=0;i<fldnum;i++)
       {
         if(NULL!=values[i])
@@ -448,15 +465,15 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
           col++;
         }
       }
-      if(NULL!=reorder_fields)
+      if(NULL!=reorder_fields&&(lineno>1||!Hflag))
       {
         int j;
         for(i=0,col=0;0!=reorder_fields[i];i++,col++)
         {
-          if(reorder_fields[i]==INF) prfld("",0,col,"");
+          if(reorder_fields[i]==INF) prfld("",0,col,(OT_JSON==otype?out_fields[col]:""));
           if(abs(reorder_fields[i])>fldnum) continue;
-          if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,fields[reorder_fields[i]-1]);
-          else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,fields[j-1]);
+          if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,(OT_JSON==otype?out_fields[col]:fields[reorder_fields[i]-1]));
+          else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,(OT_JSON==otype?out_fields[col]:fields[j-1]));
         }
       }
       for(i=0;i<fldnum;i++)
@@ -481,6 +498,11 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   {
     free(procval);
     procval=NULL;
+  }
+  if(NULL!=out_fields)
+  {
+    for(i=0;NULL!=out_fields[i];i++) free(out_fields[i]);
+    free(out_fields);
   }
   if(NULL!=fields)
   {

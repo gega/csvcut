@@ -1,4 +1,4 @@
-AC_INIT([csvcut], [1.3], [gati.gergely@gmail.com])
+AC_INIT([csvcut], [1.4], [gati.gergely@gmail.com])
 VERSION="$PACKAGE_VERSION"
 AC_SUBST([VERSION])
 AC_DEFINE_UNQUOTED([VERSION_NUMBER], ["$PACKAGE_VERSION"], [Version number])
