@@ -24,6 +24,7 @@ tests=(
     "-H -f 3-4,11 -c 3-4/11:$WHERE/procfield customers-100.csv"	#9
     "-H -c 4/1:$WHERE/procfield customers-100.csv"		#10
     "-r 7-,1,3-4,-2 -H $WHERE/organizations-100.csv"		#11
+    "-r -1,2^3^5,1*1*1,1*2*9 -H $WHERE/organizations-100.csv"   #12
 )
 
 hash=(
@@ -38,6 +39,7 @@ hash=(
     "f2ed118126712ed0c71b643d93c207f1"  # 9
     "a5069b1a2dfd3789b5545a02fc4d8816"  # 10
     "110b56cf242e43a6995b6ea645e4f822"  # 11
+    "b82c5ea896f19fa8402f00d2c86dc08f"  # 12
 )
 
 function show_help()

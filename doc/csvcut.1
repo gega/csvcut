@@ -35,8 +35,23 @@ all fields from the first to M'th
 .TP
 .BI "\-r " fields
 Select fields. Ranges should be described the same way as for the \-f
-argument. There is a new column designator the plus sign '+' which adds a
+argument. There is a column designator the plus sign '+' which adds a
 new column to the output filled with empty string.
+It is possible to combine multiple columns with the following operators:
+.RS
+.TP
+\fB'^'\fR
+choose the longer value from the specified columns
+
+"2^5^7"
+.TP
+\fB'*'\fR
+concatenate the given columns to one
+
+"2*5*7"
+.RE
+
+.RS
 This option will reorder the input columns in the order of the
 range definitions. A column can appear multiple times in the range set and
 it will appear multiple times in the output as well.

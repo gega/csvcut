@@ -47,6 +47,9 @@
 #error Missing VERSION_NUMBER macro
 #endif
 #define INF (INT_MAX)
+#define COMBINE_UNION  (INT_MIN)
+#define COMBINE_LONGER (INT_MIN+1)
+#define COMBINES_MAX   (COMBINE_LONGER)
 
 
 enum outtype
@@ -362,6 +365,8 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   char **values=NULL;
   char **procval=NULL;
   char **out_fields=NULL;
+  int *coll_flds=NULL;
+  int coll_type;
   void (*prfld)(char * const, int, int, char const *);
 
   bufsiz=BUFCHUNK;
@@ -409,6 +414,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       fields=calloc(fldnum,sizeof(char *));
       values=calloc(fldnum,sizeof(char *));
       procval=calloc(fldnum,sizeof(char *));
+      coll_flds=calloc(fldnum*2,sizeof(int));
     }
 
     if('\0'!=buf[0])
@@ -425,20 +431,20 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
         if(i>=fldnum) continue;
         values[i]=NULL;
         procval[i]=NULL;
-        if(lineno==1)
+        if(1==lineno)
         {
           fields[i]=strdup(f);
           if(NULL==fields[i]) err(1, "strdup");
           if(OT_XML==otype) xmltagsanitize(fields[i]);
         }
-        if(lineno==1&&Hflag) continue;
-        if(positions==NULL||(autostop>1&&autostop<(i+1))||(maxval>i&&positions[i+1]!=0))
+        if(1==lineno&&Hflag) continue;
+        if(NULL==positions||(autostop>1&&autostop<(i+1))||(maxval>i&&positions[i+1]!=0))
         {
           if(NULL!=f) values[i]=strdup(f);
           col++;
         }
       }
-      if(lineno==1&&NULL!=reorder_fields&&OT_JSON==otype)
+      if(1==lineno&&NULL!=reorder_fields&&OT_JSON==otype)
       {
         char str[32];
         for(col=0;0!=reorder_fields[col];col++);
@@ -467,13 +473,60 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       }
       if(NULL!=reorder_fields&&(lineno>1||!Hflag))
       {
-        int j;
-        for(i=0,col=0;0!=reorder_fields[i];i++,col++)
+        int j,coll;
+        for(i=0,col=coll=0;0!=reorder_fields[i];i++,col++)
         {
           if(reorder_fields[i]==INF) prfld("",0,col,(OT_JSON==otype?out_fields[col]:""));
+          if(reorder_fields[i]<=COMBINES_MAX)
+          {
+            if(coll<((fldnum*2)-1))
+            {
+              coll_flds[coll++]=reorder_fields[i+1]-1;
+              coll_type=reorder_fields[i];
+            }
+            else err(1, "combine");
+            ++i;
+            --col;
+            continue;
+          }
           if(abs(reorder_fields[i])>fldnum) continue;
-          if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,(OT_JSON==otype?out_fields[col]:fields[reorder_fields[i]-1]));
-          else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,(OT_JSON==otype?out_fields[col]:fields[j-1]));
+          if(0==coll)
+          {
+            if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,(OT_JSON==otype?out_fields[col]:fields[reorder_fields[i]-1]));
+            else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,(OT_JSON==otype?out_fields[col]:fields[j-1]));
+          }
+          else
+          {
+            coll_flds[coll++]=reorder_fields[i]-1;
+            if(COMBINE_LONGER==coll_type)
+            {
+              int maxj=coll_flds[0],maxl=-1,l;
+              for(j=0;j<coll;j++)
+              {
+                l=strlen(values[coll_flds[j]]);
+                if(l>maxl)
+                { 
+                  maxj=coll_flds[j];
+                  maxl=l;
+                }
+              }
+              prfld(values[maxj],maxj,col,(OT_JSON==otype?out_fields[col]:fields[maxj]));
+            }
+            else if(COMBINE_UNION==coll_type)
+            {
+              int len=0;
+              char *cmb;
+              for(j=0;j<coll;j++) len+=strlen(values[coll_flds[j]]);
+              cmb=malloc(len+1);
+              if(NULL==cmb) err(1, "malloc");
+              cmb[0]='\0';
+              for(j=0;j<coll;j++) strcat(cmb,values[coll_flds[j]]);
+              prfld(cmb,coll_flds[0],col,(OT_JSON==otype?out_fields[col]:fields[coll_flds[0]]));
+              free(cmb);
+            }
+            else errx(1, "coll_type=%d coll=%d",coll_type,coll);
+            coll=0;
+          }
         }
       }
       for(i=0;i<fldnum;i++)
@@ -510,6 +563,11 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
     free(fields);
     fields=NULL;
   }
+  if(NULL!=coll_flds)
+  {
+    free(coll_flds);
+    coll_flds=NULL;
+  }
   free(buf);
   escape(NULL);
   if(NULL!=positions) free(positions);
@@ -541,10 +599,17 @@ static void get_type(char *type)
   if(NULL==otc[i].name) errx(1, "Invalid type");
 }
 
+// parse one range which ends with one of the chars in 'd'
+// "+"
+// "1-4"
+// "-4"
+// "4-"
+// "4+6"
+// "4^6"
 static char *parse_range(char *s, char *d, int *min, int *max)
 {
   char *ret=NULL;
-  
+
   if(NULL==s||NULL==min||NULL==max||NULL==d||strlen(s)<1) return(NULL);
   *min=*max=(int)strtol(s,&ret,10);
   if(*min<0)
@@ -552,11 +617,13 @@ static char *parse_range(char *s, char *d, int *min, int *max)
     // negative number means range from 1 to N
     *max=-*min;
     *min=1;
-  } else {
-    if(*ret=='-')
+  }
+  else
+  {
+    if('-'==*ret)
     {
       s=++ret;
-      if(NULL==strchr(d,*s)) *max=(int)strtol(s,&ret,10);
+      if(strchr(d,*s)==NULL) *max=(int)strtol(s,&ret,10);
       else *max=INF;
     }
     if(*min>*max)
@@ -629,7 +696,7 @@ static int *parse_rangeset(char *arg)
 {
   int neg;
   char *cmd=arg;
-  int i,rmn,rmx,n;
+  int i,rmn,rmx,n,cat=0,val;
   int rs_cnt=0;
   int *ret=NULL;
   
@@ -639,7 +706,7 @@ static int *parse_rangeset(char *arg)
     do
     {
       neg=1;
-      cmd=parse_range(cmd+1,",+",&rmn,&rmx);
+      cmd=parse_range(cmd+1,(cat==0?",+^*":",^*"),&rmn,&rmx);
       if(NULL==cmd) errx(1, "wrong field range %d",__LINE__);
       if(rmx==INF)
       {
@@ -648,13 +715,32 @@ static int *parse_rangeset(char *arg)
       }
       --rmn;
       n=rmx-rmn;
-      if(*cmd=='+') { ++cmd; rmn=INF-1; }
+      if('+'==*cmd)
+      {
+        ++cmd;
+        rmn=INF-1;
+        cat=0;
+      }
+      else if('^'==*cmd)
+      {
+        if(n!=1||(0!=cat&&COMBINE_LONGER!=cat)) errx(1, "wrong combine field %d",__LINE__);
+        cat=COMBINE_LONGER;
+        n=2;
+      }
+      else if('*'==*cmd)
+      {
+        if(n!=1||(0!=cat&&COMBINE_UNION!=cat)) errx(1, "wrong union field %d n=%d cat=%d",__LINE__,n,cat);
+        cat=COMBINE_UNION;
+        n=2;
+      }
+      else cat=0;
       ret=realloc(ret,(rs_cnt+n+1)*sizeof(int));
       memset(&ret[rs_cnt],0,(n+1)*sizeof(int));
-      for(i=rs_cnt;i<rs_cnt+n;i++,rmn++) ret[i]=(rmn+1)*neg;
+      val=cat;
+      for(i=rs_cnt;i<rs_cnt+n;i++,rmn++,val=rmn) ret[i]=(cat==0?(rmn+1)*neg:val);
       rs_cnt+=n;
     }
-    while(*cmd==',');
+    while(*cmd!='\0'&&strchr(",*^",*cmd)!=NULL);
   }
   
   return(ret);

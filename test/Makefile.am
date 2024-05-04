@@ -11,4 +11,5 @@ TESTS = $(check_PROGRAMS) \
         test_T8.sh \
         test_T9.sh \
         test_T10.sh \
-        test_T11.sh
+        test_T11.sh \
+        test_T12.sh
