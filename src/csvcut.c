@@ -198,8 +198,8 @@ static int countquotes_fld(char const * str, int *len, char dchar, int *fields)
 
 static char *escape(char *str)
 {
-  static const char esc[]={'\n','\t','\r','\"','\0'};
-  static const char rpl[]={ 'n', 't', 'r', '"','\0'};
+  static const char esc[]={'\n','\t','\r','"','\0'};
+  static const char rpl[]={ 'n', 't', 'r','"','\0'};
   static char *buf=NULL;
   static int buflen=0;
   int len;
@@ -223,7 +223,10 @@ static char *escape(char *str)
   for(b=buf+1;*str;str++)
   {
     e=strchr(esc,*str);
-    if(e==NULL) *b++=*str;
+    if(e==NULL)
+    {
+      *b++=*str;
+    }
     else
     {
       if(*(b-1)!='"')
@@ -365,8 +368,8 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
   char **values=NULL;
   char **procval=NULL;
   char **out_fields=NULL;
-  int *coll_flds=NULL;
-  int coll_type;
+  int *cmbn_flds=NULL;
+  int cmbn_type;
   void (*prfld)(char * const, int, int, char const *);
 
   bufsiz=BUFCHUNK;
@@ -414,7 +417,7 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       fields=calloc(fldnum,sizeof(char *));
       values=calloc(fldnum,sizeof(char *));
       procval=calloc(fldnum,sizeof(char *));
-      coll_flds=calloc(fldnum*2,sizeof(int));
+      cmbn_flds=calloc(fldnum*2,sizeof(int));
     }
 
     if('\0'!=buf[0])
@@ -473,16 +476,16 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
       }
       if(NULL!=reorder_fields&&(lineno>1||!Hflag))
       {
-        int j,coll;
-        for(i=0,col=coll=0;0!=reorder_fields[i];i++,col++)
+        int j,cmbn;
+        for(i=0,col=cmbn=0;0!=reorder_fields[i];i++,col++)
         {
           if(reorder_fields[i]==INF) prfld("",0,col,(OT_JSON==otype?out_fields[col]:""));
           if(reorder_fields[i]<=COMBINES_MAX)
           {
-            if(coll<((fldnum*2)-1))
+            if(cmbn<((fldnum*2)-1))
             {
-              coll_flds[coll++]=reorder_fields[i+1]-1;
-              coll_type=reorder_fields[i];
+              cmbn_flds[cmbn++]=reorder_fields[i+1]-1;
+              cmbn_type=reorder_fields[i];
             }
             else err(1, "combine");
             ++i;
@@ -490,42 +493,42 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
             continue;
           }
           if(abs(reorder_fields[i])>fldnum) continue;
-          if(0==coll)
+          if(0==cmbn)
           {
             if(reorder_fields[i]>0) prfld(values[reorder_fields[i]-1],reorder_fields[i]-1,col,(OT_JSON==otype?out_fields[col]:fields[reorder_fields[i]-1]));
             else for(j=-reorder_fields[i];j<=fldnum;j++,col++) prfld(values[j-1],j-1,col,(OT_JSON==otype?out_fields[col]:fields[j-1]));
           }
           else
           {
-            coll_flds[coll++]=reorder_fields[i]-1;
-            if(COMBINE_LONGER==coll_type)
+            cmbn_flds[cmbn++]=reorder_fields[i]-1;
+            if(COMBINE_LONGER==cmbn_type)
             {
-              int maxj=coll_flds[0],maxl=-1,l;
-              for(j=0;j<coll;j++)
+              int maxj=cmbn_flds[0],maxl=-1,l;
+              for(j=0;j<cmbn;j++)
               {
-                l=strlen(values[coll_flds[j]]);
+                l=strlen(values[cmbn_flds[j]]);
                 if(l>maxl)
                 { 
-                  maxj=coll_flds[j];
+                  maxj=cmbn_flds[j];
                   maxl=l;
                 }
               }
               prfld(values[maxj],maxj,col,(OT_JSON==otype?out_fields[col]:fields[maxj]));
             }
-            else if(COMBINE_UNION==coll_type)
+            else if(COMBINE_UNION==cmbn_type)
             {
               int len=0;
               char *cmb;
-              for(j=0;j<coll;j++) len+=strlen(values[coll_flds[j]]);
+              for(j=0;j<cmbn;j++) len+=strlen(values[cmbn_flds[j]]);
               cmb=malloc(len+1);
               if(NULL==cmb) err(1, "malloc");
               cmb[0]='\0';
-              for(j=0;j<coll;j++) strcat(cmb,values[coll_flds[j]]);
-              prfld(cmb,coll_flds[0],col,(OT_JSON==otype?out_fields[col]:fields[coll_flds[0]]));
+              for(j=0;j<cmbn;j++) strcat(cmb,values[cmbn_flds[j]]);
+              prfld(cmb,cmbn_flds[0],col,(OT_JSON==otype?out_fields[col]:fields[cmbn_flds[0]]));
               free(cmb);
             }
-            else errx(1, "coll_type=%d coll=%d",coll_type,coll);
-            coll=0;
+            else errx(1, "cmbn_type=%d cmbn=%d",cmbn_type,cmbn);
+            cmbn=0;
           }
         }
       }
@@ -563,10 +566,10 @@ static int csv_cut(FILE *fp, const char *fnam, char dchar)
     free(fields);
     fields=NULL;
   }
-  if(NULL!=coll_flds)
+  if(NULL!=cmbn_flds)
   {
-    free(coll_flds);
-    coll_flds=NULL;
+    free(cmbn_flds);
+    cmbn_flds=NULL;
   }
   free(buf);
   escape(NULL);
@@ -600,12 +603,12 @@ static void get_type(char *type)
 }
 
 // parse one range which ends with one of the chars in 'd'
-// "+"
-// "1-4"
-// "-4"
-// "4-"
-// "4+6"
-// "4^6"
+// "+"      new field
+// "1-4"    exact range
+// "-4"     range from first (negative value)
+// "4-"     range to fldnum
+// "4+6"    combine multiple fields (parse only the "4+" part)
+// "4^6"    select the longest field (parse until the operator)
 static char *parse_range(char *s, char *d, int *min, int *max)
 {
   char *ret=NULL;
