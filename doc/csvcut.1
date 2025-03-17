@@ -1,181 +1,179 @@
-.\" Manpage for csvcut.
-.\" Contact gati.gergely@gmail.com to correct errors or typos.
-.TH man 1 "23 Mar 2024" "1.0" "csvcut man page"
+." Manpage for csvcut.
+." Contact gati.gergely@gmail.com to correct errors or typos.
+.TH csvcut 1 "23 Mar 2024" "1.0" "csvcut man page"
 .SH NAME
-csvcut \- select/process columns from csv files
+csvcut \- select and process columns from CSV files
 .SH SYNOPSIS
-csvcut [-f list|-r list] [-H] [-s] [-q] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field/args:cmd] [file ...]
+.B csvcut
+[-f list | -r list] [-H] [-s] [-q] [-o csv|json|xml] [-d delim] [-D output-delim] [-c field/args:cmd] [file ...]
+
 .SH DESCRIPTION
-csvcut is a cut implementation for csv files.
-Parsing the input as csv formatted text file according to RFC 4180 with the exception that line
-ending is based on the system default.
+.B csvcut
+is a tool for selecting and processing columns from CSV files.
+It parses input as a CSV-formatted text file following RFC 4180, with the exception that line endings are based on the system default.
+
 .SH OPTIONS
 
 .TP
-.BI "\-f " fields
-Select fields. This could be one range or several ranges separated by comma.
+.BI "-f " fields
+Select specific fields. This can be a single range or multiple ranges separated by commas.
 This option cannot be used together with the \-r option.
-A range is one of the following:
+A range can be specified using the following forms:
 
 .RS
 .TP
 N
-N'th field counting from 1
+The N'th field (1-based indexing).
 .TP
 N\-
-N'th field and all following fields
+The N'th field and all fields following it.
 .TP
 N\-M
-fields between N'th and M'th including both given fields
+Fields between the N'th and M'th positions, inclusive.
 .TP
-\fB\-M\fR
-all fields from the first to M'th
+\-M
+All fields from the first to the M'th.
 .RE
 
 .TP
-.BI "\-r " fields
-Select fields. Ranges should be described the same way as for the \-f
-argument. There is a column designator the plus sign '+' which adds a
-new column to the output filled with empty string.
-It is possible to combine multiple columns with the following operators:
+.BI "-r " fields
+Select and reorder fields. Ranges follow the same format as described for the \-f option.
+This option allows an additional column designator, the plus sign ('+'), which adds a new empty column to the output.
+
+It is also possible to combine multiple columns using the following operators:
+
 .RS
 .TP
-\fB'^'\fR
-choose the longer value from the specified columns
-
-"2^5^7"
+.B '^'
+Select the longest value from the specified columns (e.g., "2^5^7").
 .TP
-\fB'*'\fR
-concatenate the given columns to one
-
-"2*5*7"
+.B '*'
+Concatenate the specified columns into one (e.g., "2*5*7").
 .RE
 
-.RS
-This option will reorder the input columns in the order of the
-range definitions. A column can appear multiple times in the range set and
-it will appear multiple times in the output as well.
-This option cannot be used together with the \-f option.
-.RE
+This option will reorder the input columns according to the specified ranges. Columns can appear multiple times in the output. This option cannot be used together with the \-f option.
 
 .TP
-.B \-H
-Skip the first row from the output. The first row usually the header for csv
-files. This option is implicitly set when choosing an output format other
-than csv.
+.B -H
+Skip the first row of the output, which is typically the header row in CSV files. This option is implicitly enabled when using output formats other than CSV.
 
 .TP
-.B \-s
-Keep the first row unprocessed, do not call callout commands just copy the
-input fields.
+.B -s
+Preserve the first row without processing it. No callout commands are applied to the first row.
 
 .TP
-.B \-q
-Do not add quotes for the output even if it is necessary.
+.B -q
+Do not add quotes in the output, even when they would normally be required.
 
 .TP
-.BI "\-d " delim
-Choose a delimiter for the input csv. Default is a comma ',' character.
+.BI "-d " delim
+Specify a delimiter for the input CSV. The default delimiter is a comma (',').
 
 .TP
-.BI "\-D " delim
-Choose a delimiter for the output csv. Default is a comma ',' character.
-This option is ignored for any output format except csv.
+.BI "-D " delim
+Specify a delimiter for the output CSV. The default is a comma (','). This option is ignored for non-CSV output formats.
 
 .TP
-.BI "\-o " format
-Specify the output format. Default is 'csv'. Choose from the following
-formats:
-.TP
+.BI "-o " format
+Specify the output format. The default format is 'csv'. Available formats:
+
 .RS
 .TP
-csv
-Default csv format
+.B csv
+Standard CSV output.
 .TP
-json
-JSON output. Requires csv input with header row. The \fB\-H\fR option is implicitly set
+.B json
+JSON output. Requires input with a header row. The \-H option is implicitly enabled.
 .TP
-xml
-XML output. Requires csv input with header row. The \fB\-H\fR option is implicitly set.
+.B xml
+XML output. Requires input with a header row. The \-H option is implicitly enabled.
 .RE
 
 .TP
-.BI "\-c " field:command
-For the specified field, calls the given command and the standard output
-from the command will be placed instead of the field actual value. 
-Two ranges can be specified, separated by a forward slash '/' character.
-The first range should be one field or a single range and selects the fields
-needs top be rewritten. The second rangeset may contain multiple ranges
-separated by comma ',' character and the selected fields are passed to the
-processing command as extra arguments.
-Can be used multiple times for different fields. The
-passed arguments to the command:
-.TP
-.RS
+.BI "-c " field:command
+For the specified field, execute the given command. The command's standard output replaces the original field value.
 
+Two ranges can be specified, separated by a forward slash ('/').
+- The first range selects the fields to be processed (must be a single field or range).
+- The second range specifies additional fields to be passed as arguments to the command.
+
+This option can be used multiple times for different fields. The following arguments are passed to the command:
+
+.RS
 .TP
 1
-column number in the input file
+Column number in the input.
 .TP
 2
-column number in the output file
+Column number in the output.
 .TP
 3
-name of the field, according to the header row
+Field name from the header row.
 .TP
 4
-actual field value
+Current field value.
 .TP
 5+
-extra arguments specified by the second range set
+Additional arguments from the second range.
 .RE
 
 .TP
-.B \-h
-Summary of command line arguments and exit
+.B -h
+Display a summary of command-line arguments and exit.
 
 .SH EXAMPLES
 
-$ csvcut -H -f 1-3,5,9- -c 2-3/6,8-9:pf_1 -c 5/2,4:pf_2 input.csv
+.B Example 1:
 
-This command will process input.csv, outputting 1,2,3,5,9 and all the rest of
-the columns with processing of 2nd, 3rd and 5th fields, omitting the first
-row. The columns 2 and 3
-will be processed by an executable called pf_1 which will receive the
-following arguments when called for the column 3:
-.TP
-1
-column number in input, value 3
-.TP
-2
-column number in output, value 3
-.TP
-3
-name of the field, the 3rd field of the first row of the input
-.TP
-4
-the value of the 3rd field of the current row
-.TP
-5
-the value of the 6th field of the current row
-.TP
-6
-the value of the 8th field of the current row
-.TP
-7
-the value of the 9th field of the current row
+Process specific columns and use external commands for transformations:
+
+.RS
+.nf
+$ csvcut -H -f 1-3,5,9- -c 2-3/6,8-9:pf_1 -c 5/2,4:pf_2 input.csv
+.fi
 .RE
 
-The standard output will be used as the column 3 of the generated output.
-The column 5 will be processed by the executable called pf_2 and the extra
-arguments will be the current values of the second and forth columns.
+This command processes 'input.csv', outputs columns 1, 2, 3, 5, 9, and the rest, and applies transformations to the 2nd, 3rd, and 5th fields while omitting the header.
+
+When processing the 3rd field, the 'pf_1' executable will receive the following arguments:
+
+.RS
+.TP
+1
+Input column number (3).
+.TP
+2
+Output column number (3).
+.TP
+3
+Field name (from the 3rd field of the first row).
+.TP
+4
+Current value of the 3rd field.
+.TP
+5
+Value of the 6th field.
+.TP
+6
+Value of the 8th field.
+.TP
+7
+Value of the 9th field.
+.RE
+
+The command output will be used as the new value for the 3rd field.
+
+The 5th column is similarly processed by the 'pf_2' executable with the 2nd and 4th columns as extra arguments.
 
 .SH SEE ALSO
-cut(1), jq(1), xmllint(1)
+.B cut(1), jq(1), xmllint(1)
+
 .SH BUGS
 No known bugs.
+
 .SH AUTHOR
 Gergely Gati (gati.gergely@gmail.com)
+
 .SH COPYRIGHT
 Copyright \(co 2024 Gergely Gati
 .P
